@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hacker News Comment Tree Visualizer</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      :root {
+        --hn-orange: #ff6600;
+        --hn-orange-dark: #cc5200;
+        --hn-beige: #f6f6ef;
+        --hn-beige-dark: #e8e8e0;
+        --text-primary: #000;
+        --text-secondary: #666;
+        --text-muted: #828282;
+        --border-color: #ccc;
+        --highlight-bg: #ffff00;
+        --deleted-bg: #f0f0f0;
+        --focus-ring: #ff6600;
+      }
+
+      body {
+        font-family: Verdana, Geneva, sans-serif;
+        font-size: 13px;
+        background-color: var(--hn-beige);
+        margin: 0;
+        padding: 20px;
+        line-height: 1.4;
+        color: var(--text-primary);
+      }
+
+      h1 {
+        color: var(--hn-orange);
+        margin: 0 0 20px 0;
+        font-size: 18px;
+      }
+
+      /* Input Section */
+      .input-section {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+      }
+
+      .input-section label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .input-row input[type="text"] {
+        flex: 1;
+        padding: 8px 10px;
+        font-size: 13px;
+        font-family: inherit;
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+      }
+
+      .input-row input[type="text"]:focus {
+        outline: none;
+        border-color: var(--hn-orange);
+      }
+
+      button {
+        background-color: var(--hn-orange);
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-family: inherit;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      button:hover:not(:disabled) {
+        background-color: var(--hn-orange-dark);
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      /* Search Section */
+      .search-section {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        display: none;
+      }
+
+      .search-section.visible {
+        display: block;
+      }
+
+      .search-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .search-row input[type="text"] {
+        width: 250px;
+        padding: 6px 10px;
+        font-size: 13px;
+        font-family: inherit;
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+      }
+
+      .search-row input[type="text"]:focus {
+        outline: none;
+        border-color: var(--hn-orange);
+      }
+
+      .search-options {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .search-options label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
+
+      .search-options input[type="checkbox"] {
+        cursor: pointer;
+      }
+
+      .search-nav {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: auto;
+      }
+
+      .search-nav button {
+        padding: 4px 10px;
+        font-size: 11px;
+      }
+
+      .search-counter {
+        font-size: 11px;
+        color: var(--text-muted);
+        min-width: 80px;
+        text-align: center;
+      }
+
+      /* Status Messages */
+      .status {
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 3px;
+        display: none;
+      }
+
+      .status.loading {
+        display: block;
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .status.error {
+        display: block;
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      /* Thread Header */
+      .thread-header {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        display: none;
+      }
+
+      .thread-header.visible {
+        display: block;
+      }
+
+      .thread-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 0 0 8px 0;
+      }
+
+      .thread-title a {
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+
+      .thread-title a:hover {
+        text-decoration: underline;
+      }
+
+      .thread-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .thread-meta a {
+        color: var(--text-muted);
+        text-decoration: none;
+      }
+
+      .thread-meta a:hover {
+        text-decoration: underline;
+      }
+
+      .thread-stats {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--hn-beige-dark);
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      /* Tree Container */
+      .tree-container {
+        display: none;
+      }
+
+      .tree-container.visible {
+        display: block;
+      }
+
+      /* Comment Node */
+      .comment-node {
+        position: relative;
+        margin-left: 20px;
+      }
+
+      .comment-node.root {
+        margin-left: 0;
+      }
+
+      .comment-box {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 8px;
+        width: 350px;
+        position: relative;
+      }
+
+      .comment-box.focused {
+        border-color: var(--hn-orange);
+        box-shadow: 0 0 0 2px rgba(255, 102, 0, 0.2);
+      }
+
+      .comment-box.deleted {
+        background: var(--deleted-bg);
+        font-style: italic;
+        color: var(--text-muted);
+      }
+
+      .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 6px;
+        gap: 8px;
+      }
+
+      .comment-author {
+        font-weight: bold;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 11px;
+      }
+
+      .comment-author:hover {
+        text-decoration: underline;
+      }
+
+      .comment-link {
+        font-size: 10px;
+        color: var(--text-muted);
+        text-decoration: none;
+      }
+
+      .comment-link:hover {
+        text-decoration: underline;
+      }
+
+      .comment-text {
+        font-size: 12px;
+        line-height: 1.5;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .comment-text.truncated {
+        max-height: 100px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .comment-text mark {
+        background-color: var(--highlight-bg);
+        padding: 0 2px;
+      }
+
+      .expand-text-btn {
+        display: inline-block;
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--hn-orange);
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+      }
+
+      .expand-text-btn:hover {
+        text-decoration: underline;
+      }
+
+      /* Comment Actions */
+      .comment-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--hn-beige-dark);
+        flex-wrap: wrap;
+      }
+
+      .comment-actions button {
+        padding: 3px 8px;
+        font-size: 10px;
+        background: var(--hn-beige);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+      }
+
+      .comment-actions button:hover:not(:disabled) {
+        background: var(--hn-beige-dark);
+      }
+
+      .comment-actions button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Collapse Summary */
+      .collapse-summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 8px;
+        background: var(--hn-beige);
+        border: 1px dashed var(--border-color);
+        border-radius: 3px;
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-left: 20px;
+        margin-bottom: 8px;
+        cursor: pointer;
+      }
+
+      .collapse-summary:hover {
+        background: var(--hn-beige-dark);
+      }
+
+      /* Tree Lines */
+      .children-container {
+        position: relative;
+        padding-left: 10px;
+        border-left: 1px solid var(--border-color);
+        margin-left: 10px;
+      }
+
+      .children-container.collapsed {
+        display: none;
+      }
+
+      /* Stats Badge */
+      .stats-badge {
+        display: inline-block;
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🌳 Hacker News Comment Tree Visualizer</h1>
+    <div
+      id="debug-banner"
+      style="
+        display: none;
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        font-size: 12px;
+        color: #856404;
+      "
+    >
+      🔧 <strong>Debug Mode:</strong> Using mock data. Any ID/URL will return
+      the same test thread. <a href="?" style="color: #856404">Disable</a>
+    </div>
+
+    <div class="input-section">
+      <label for="hn-input">Enter a Hacker News post ID or URL:</label>
+      <div class="input-row">
+        <input
+          type="text"
+          id="hn-input"
+          placeholder="e.g., 39581733 or https://news.ycombinator.com/item?id=39581733"
+        />
+        <button id="fetch-btn">Fetch Thread</button>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="search-section" class="search-section">
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="Search comments..." />
+        <div class="search-options">
+          <label>
+            <input type="checkbox" id="search-authors" /> Include authors
+          </label>
+          <label>
+            <input type="checkbox" id="search-case" /> Case sensitive
+          </label>
+        </div>
+        <div class="search-nav">
+          <button id="search-prev" disabled>◀ Prev</button>
+          <span id="search-counter" class="search-counter">0 of 0</span>
+          <button id="search-next" disabled>Next ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="thread-header" class="thread-header">
+      <h2 class="thread-title">
+        <a id="thread-title-link" href="#" target="_blank"></a>
+      </h2>
+      <div class="thread-meta">
+        by <a id="thread-author" href="#" target="_blank"></a> •
+        <a id="thread-hn-link" href="#" target="_blank">view on HN</a>
+      </div>
+      <div class="thread-stats" id="thread-stats"></div>
+    </div>
+
+    <div id="tree-container" class="tree-container"></div>
+
+    <script>
+      // ============================================
+      // Debug Mode Detection
+      // ============================================
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDebugMock = urlParams.get("debug") === "mock";
+
+      if (isDebugMock) {
+        console.log("🔧 Debug mode enabled: using mock data");
+        document.getElementById("debug-banner").style.display = "block";
+      }
+
+      // ============================================
+      // Global State
+      // ============================================
+      let threadData = null;
+      let allComments = [];
+      let searchMatches = [];
+      let currentMatchIndex = -1;
+      let focusedCommentId = null;
+
+      // ============================================
+      // DOM Elements
+      // ============================================
+      const hnInput = document.getElementById("hn-input");
+      const fetchBtn = document.getElementById("fetch-btn");
+      const statusEl = document.getElementById("status");
+      const searchSection = document.getElementById("search-section");
+      const searchInput = document.getElementById("search-input");
+      const searchAuthors = document.getElementById("search-authors");
+      const searchCase = document.getElementById("search-case");
+      const searchPrev = document.getElementById("search-prev");
+      const searchNext = document.getElementById("search-next");
+      const searchCounter = document.getElementById("search-counter");
+      const threadHeader = document.getElementById("thread-header");
+      const threadTitleLink = document.getElementById("thread-title-link");
+      const threadAuthor = document.getElementById("thread-author");
+      const threadHnLink = document.getElementById("thread-hn-link");
+      const threadStats = document.getElementById("thread-stats");
+      const treeContainer = document.getElementById("tree-container");
+
+      // ============================================
+      // Utility Functions
+      // ============================================
+      function extractHnId(input) {
+        const trimmed = input.trim();
+        if (/^\d+$/.test(trimmed)) {
+          return trimmed;
+        }
+        const match = trimmed.match(/id=(\d+)/);
+        if (match && match[1]) {
+          return match[1];
+        }
+        throw new Error(
+          "Invalid input. Please enter a valid Hacker News ID or URL."
+        );
+      }
+
+      function cleanHtmlContent(text) {
+        if (!text) return "";
+        const tempElement = document.createElement("div");
+        tempElement.innerHTML = text;
+        return tempElement.innerHTML;
+      }
+
+      function stripHtml(html) {
+        const tmp = document.createElement("div");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+      }
+
+      function showStatus(message, type = "loading") {
+        statusEl.textContent = message;
+        statusEl.className = `status ${type}`;
+      }
+
+      function hideStatus() {
+        statusEl.className = "status";
+      }
+
+      function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+
+      // ============================================
+      // Data Processing
+      // ============================================
+      function flattenComments(node, depth = 0, parentId = null, list = []) {
+        if (!node) return list;
+
+        const comment = {
+          id: node.id,
+          author: node.author,
+          text: node.text || "",
+          deleted: !node.author || node.deleted,
+          depth: depth,
+          parentId: parentId,
+          children: [],
+          childIds: [],
+        };
+
+        list.push(comment);
+
+        if (node.children && node.children.length > 0) {
+          for (const child of node.children) {
+            comment.childIds.push(child.id);
+            flattenComments(child, depth + 1, node.id, list);
+          }
+        }
+
+        return list;
+      }
+
+      function calculateSubtreeStats(commentId) {
+        const comment = allComments.find((c) => c.id === commentId);
+        if (!comment) return { count: 0, users: 0 };
+
+        let count = 0;
+        let users = new Set();
+
+        function traverse(id) {
+          const c = allComments.find((x) => x.id === id);
+          if (!c) return;
+
+          count++;
+          if (!c.deleted && c.author) {
+            users.add(c.author);
+          }
+
+          for (const childId of c.childIds) {
+            traverse(childId);
+          }
+        }
+
+        traverse(commentId);
+
+        return { count, users: users.size };
+      }
+
+      function getSiblings(commentId) {
+        const comment = allComments.find((c) => c.id === commentId);
+        if (!comment || !comment.parentId)
+          return { prev: null, next: null, siblings: [] };
+
+        const parent = allComments.find((c) => c.id === comment.parentId);
+        if (!parent) return { prev: null, next: null, siblings: [] };
+
+        const siblingIds = parent.childIds;
+        const currentIndex = siblingIds.indexOf(commentId);
+
+        return {
+          prev: currentIndex > 0 ? siblingIds[currentIndex - 1] : null,
+          next:
+            currentIndex < siblingIds.length - 1
+              ? siblingIds[currentIndex + 1]
+              : null,
+          siblings: siblingIds,
+        };
+      }
+
+      function getParentLineage(commentId) {
+        const lineage = [];
+        let current = allComments.find((c) => c.id === commentId);
+
+        while (current && current.parentId) {
+          lineage.unshift(current.parentId);
+          current = allComments.find((c) => c.id === current.parentId);
+        }
+
+        return lineage;
+      }
+
+      // ============================================
+      // Rendering
+      // ============================================
+      function renderThread() {
+        if (!threadData) return;
+
+        // Update header
+        const hnUrl = `https://news.ycombinator.com/item?id=${threadData.id}`;
+        threadTitleLink.textContent = threadData.title || "(No title)";
+        threadTitleLink.href = threadData.url || hnUrl;
+        threadAuthor.textContent = threadData.author || "unknown";
+        threadAuthor.href = `https://news.ycombinator.com/user?id=${threadData.author}`;
+        threadHnLink.href = hnUrl;
+
+        // Calculate stats
+        const totalComments = allComments.filter((c) => !c.deleted).length;
+        const uniqueUsers = new Set(
+          allComments.filter((c) => !c.deleted && c.author).map((c) => c.author)
+        ).size;
+        threadStats.textContent = `${totalComments} comments by ${uniqueUsers} unique participants`;
+
+        threadHeader.classList.add("visible");
+        searchSection.classList.add("visible");
+        treeContainer.classList.add("visible");
+
+        // Render tree
+        renderTree();
+      }
+
+      function renderTree() {
+        treeContainer.innerHTML = "";
+
+        if (!threadData.children || threadData.children.length === 0) {
+          treeContainer.innerHTML =
+            '<p style="color: var(--text-muted); font-style: italic;">No comments yet.</p>';
+          return;
+        }
+
+        for (const childId of threadData.children.map((c) => c.id)) {
+          const nodeEl = renderCommentNode(childId, true);
+          if (nodeEl) {
+            treeContainer.appendChild(nodeEl);
+          }
+        }
+      }
+
+      function renderCommentNode(commentId, isRoot = false) {
+        const comment = allComments.find((c) => c.id === commentId);
+        if (!comment) return null;
+
+        const nodeEl = document.createElement("div");
+        nodeEl.className = `comment-node${isRoot ? " root" : ""}`;
+        nodeEl.dataset.commentId = commentId;
+
+        // Comment box
+        const boxEl = document.createElement("div");
+        boxEl.className = `comment-box${comment.deleted ? " deleted" : ""}`;
+        boxEl.id = `comment-${commentId}`;
+
+        // Header
+        const headerEl = document.createElement("div");
+        headerEl.className = "comment-header";
+
+        if (comment.deleted) {
+          const deletedSpan = document.createElement("span");
+          deletedSpan.className = "comment-author";
+          deletedSpan.textContent = "[deleted]";
+          headerEl.appendChild(deletedSpan);
+        } else {
+          const authorLink = document.createElement("a");
+          authorLink.className = "comment-author";
+          authorLink.href = `https://news.ycombinator.com/user?id=${comment.author}`;
+          authorLink.target = "_blank";
+          authorLink.textContent = comment.author;
+          headerEl.appendChild(authorLink);
+        }
+
+        const hnLink = document.createElement("a");
+        hnLink.className = "comment-link";
+        hnLink.href = `https://news.ycombinator.com/item?id=${commentId}`;
+        hnLink.target = "_blank";
+        hnLink.textContent = "link";
+        headerEl.appendChild(hnLink);
+
+        boxEl.appendChild(headerEl);
+
+        // Text content
+        const textEl = document.createElement("div");
+        textEl.className = "comment-text";
+        textEl.dataset.fullText = comment.text;
+
+        const plainText = stripHtml(comment.text);
+        const needsTruncation = plainText.length > 300;
+
+        if (comment.deleted) {
+          textEl.textContent = "[comment deleted]";
+        } else {
+          textEl.innerHTML = needsTruncation
+            ? truncateHtml(comment.text, 300)
+            : cleanHtmlContent(comment.text);
+          if (needsTruncation) {
+            textEl.classList.add("truncated");
+          }
+        }
+
+        boxEl.appendChild(textEl);
+
+        // Expand text button
+        if (needsTruncation && !comment.deleted) {
+          const expandBtn = document.createElement("button");
+          expandBtn.className = "expand-text-btn";
+          expandBtn.textContent = "[expand]";
+          expandBtn.onclick = () => toggleTextExpand(textEl, expandBtn);
+          boxEl.appendChild(expandBtn);
+        }
+
+        // Actions
+        const actionsEl = document.createElement("div");
+        actionsEl.className = "comment-actions";
+
+        // Subtree stats
+        const stats = calculateSubtreeStats(commentId);
+        const hasChildren = comment.childIds.length > 0;
+
+        if (hasChildren) {
+          const collapseBtn = document.createElement("button");
+          collapseBtn.textContent = `▼ Collapse (${stats.count - 1} replies, ${
+            stats.users
+          } users)`;
+          collapseBtn.onclick = () => toggleCollapse(nodeEl, collapseBtn);
+          actionsEl.appendChild(collapseBtn);
+        }
+
+        // Sibling navigation
+        const siblings = getSiblings(commentId);
+
+        const prevSibBtn = document.createElement("button");
+        prevSibBtn.textContent = "◀ Prev sibling";
+        prevSibBtn.disabled = !siblings.prev;
+        prevSibBtn.onclick = () => navigateToComment(siblings.prev);
+        actionsEl.appendChild(prevSibBtn);
+
+        const nextSibBtn = document.createElement("button");
+        nextSibBtn.textContent = "Next sibling ▶";
+        nextSibBtn.disabled = !siblings.next;
+        nextSibBtn.onclick = () => navigateToComment(siblings.next);
+        actionsEl.appendChild(nextSibBtn);
+
+        boxEl.appendChild(actionsEl);
+        nodeEl.appendChild(boxEl);
+
+        // Children container
+        if (hasChildren) {
+          const childrenEl = document.createElement("div");
+          childrenEl.className = "children-container";
+
+          for (const childId of comment.childIds) {
+            const childNode = renderCommentNode(childId);
+            if (childNode) {
+              childrenEl.appendChild(childNode);
+            }
+          }
+
+          nodeEl.appendChild(childrenEl);
+        }
+
+        return nodeEl;
+      }
+
+      function truncateHtml(html, maxLength) {
+        const plainText = stripHtml(html);
+        if (plainText.length <= maxLength) {
+          return cleanHtmlContent(html);
+        }
+
+        // Simple truncation - just use plain text for truncated version
+        return plainText.substring(0, maxLength) + "...";
+      }
+
+      function toggleTextExpand(textEl, btn) {
+        const isExpanded = !textEl.classList.contains("truncated");
+
+        if (isExpanded) {
+          // Collapse
+          const plainText = stripHtml(textEl.dataset.fullText);
+          textEl.innerHTML = plainText.substring(0, 300) + "...";
+          textEl.classList.add("truncated");
+          btn.textContent = "[expand]";
+        } else {
+          // Expand
+          textEl.innerHTML = cleanHtmlContent(textEl.dataset.fullText);
+          textEl.classList.remove("truncated");
+          btn.textContent = "[collapse]";
+        }
+
+        // Re-apply search highlighting if active
+        if (searchInput.value.trim()) {
+          highlightSearchInComment(textEl);
+        }
+      }
+
+      function toggleCollapse(nodeEl, btn) {
+        const childrenEl = nodeEl.querySelector(":scope > .children-container");
+        if (!childrenEl) return;
+
+        const isCollapsed = childrenEl.classList.contains("collapsed");
+        const commentId = parseInt(nodeEl.dataset.commentId);
+        const stats = calculateSubtreeStats(commentId);
+
+        if (isCollapsed) {
+          // Expand
+          childrenEl.classList.remove("collapsed");
+          btn.textContent = `▼ Collapse (${stats.count - 1} replies, ${
+            stats.users
+          } users)`;
+
+          // Remove summary if exists
+          const summary = nodeEl.querySelector(":scope > .collapse-summary");
+          if (summary) summary.remove();
+        } else {
+          // Collapse
+          childrenEl.classList.add("collapsed");
+          btn.textContent = `▶ Expand (${stats.count - 1} replies, ${
+            stats.users
+          } users)`;
+
+          // Add summary
+          const summary = document.createElement("div");
+          summary.className = "collapse-summary";
+          summary.textContent = `${stats.count - 1} hidden replies from ${
+            stats.users
+          } users`;
+          summary.onclick = () => toggleCollapse(nodeEl, btn);
+          nodeEl.appendChild(summary);
+        }
+      }
+
+      function expandToComment(commentId) {
+        const lineage = getParentLineage(commentId);
+
+        for (const ancestorId of lineage) {
+          const ancestorNode = document.querySelector(
+            `.comment-node[data-comment-id="${ancestorId}"]`
+          );
+          if (!ancestorNode) continue;
+
+          const childrenEl = ancestorNode.querySelector(
+            ":scope > .children-container"
+          );
+          if (childrenEl && childrenEl.classList.contains("collapsed")) {
+            const collapseBtn = ancestorNode.querySelector(
+              ".comment-actions button"
+            );
+            if (collapseBtn && collapseBtn.textContent.includes("Expand")) {
+              toggleCollapse(ancestorNode, collapseBtn);
+            }
+          }
+        }
+      }
+
+      function navigateToComment(commentId) {
+        if (!commentId) return;
+
+        // Remove previous focus
+        const prevFocused = document.querySelector(".comment-box.focused");
+        if (prevFocused) prevFocused.classList.remove("focused");
+
+        // Expand path to comment
+        expandToComment(commentId);
+
+        // Focus and scroll to comment
+        const commentBox = document.getElementById(`comment-${commentId}`);
+        if (commentBox) {
+          commentBox.classList.add("focused");
+          commentBox.scrollIntoView({ behavior: "smooth", block: "center" });
+          focusedCommentId = commentId;
+        }
+      }
+
+      // ============================================
+      // Search Functionality
+      // ============================================
+      function performSearch() {
+        const query = searchInput.value.trim();
+
+        // Clear previous highlights
+        document.querySelectorAll(".comment-text mark").forEach((mark) => {
+          const parent = mark.parentNode;
+          parent.replaceChild(document.createTextNode(mark.textContent), mark);
+          parent.normalize();
+        });
+
+        searchMatches = [];
+        currentMatchIndex = -1;
+
+        if (!query) {
+          updateSearchCounter();
+          return;
+        }
+
+        const includeAuthors = searchAuthors.checked;
+        const caseSensitive = searchCase.checked;
+        const flags = caseSensitive ? "g" : "gi";
+        const regex = new RegExp(escapeRegex(query), flags);
+
+        // Find all matching comments
+        for (const comment of allComments) {
+          if (comment.deleted) continue;
+
+          const textContent = stripHtml(comment.text);
+          const authorMatch =
+            includeAuthors && comment.author && regex.test(comment.author);
+          const textMatch = regex.test(textContent);
+
+          if (authorMatch || textMatch) {
+            searchMatches.push(comment.id);
+          }
+
+          // Reset regex lastIndex
+          regex.lastIndex = 0;
+        }
+
+        // Highlight matches in visible comments
+        document.querySelectorAll(".comment-text").forEach((el) => {
+          highlightSearchInComment(el);
+        });
+
+        updateSearchCounter();
+
+        // Navigate to first match
+        if (searchMatches.length > 0) {
+          currentMatchIndex = 0;
+          navigateToComment(searchMatches[0]);
+          updateSearchCounter();
+        }
+      }
+
+      function highlightSearchInComment(textEl) {
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        const caseSensitive = searchCase.checked;
+        const flags = caseSensitive ? "g" : "gi";
+        const regex = new RegExp(`(${escapeRegex(query)})`, flags);
+
+        const walker = document.createTreeWalker(
+          textEl,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        const textNodes = [];
+
+        while (walker.nextNode()) {
+          textNodes.push(walker.currentNode);
+        }
+
+        for (const node of textNodes) {
+          if (regex.test(node.textContent)) {
+            const span = document.createElement("span");
+            span.innerHTML = node.textContent.replace(regex, "<mark>$1</mark>");
+            node.parentNode.replaceChild(span, node);
+          }
+          regex.lastIndex = 0;
+        }
+      }
+
+      function updateSearchCounter() {
+        const total = searchMatches.length;
+        const current = total > 0 ? currentMatchIndex + 1 : 0;
+        searchCounter.textContent = `${current} of ${total}`;
+
+        searchPrev.disabled = total === 0 || currentMatchIndex <= 0;
+        searchNext.disabled = total === 0 || currentMatchIndex >= total - 1;
+      }
+
+      function navigateSearchPrev() {
+        if (currentMatchIndex > 0) {
+          currentMatchIndex--;
+          navigateToComment(searchMatches[currentMatchIndex]);
+          updateSearchCounter();
+        }
+      }
+
+      function navigateSearchNext() {
+        if (currentMatchIndex < searchMatches.length - 1) {
+          currentMatchIndex++;
+          navigateToComment(searchMatches[currentMatchIndex]);
+          updateSearchCounter();
+        }
+      }
+
+      // ============================================
+      // Data Fetching
+      // ============================================
+      async function fetchThread() {
+        const input = hnInput.value.trim();
+        if (!input) {
+          showStatus("Please enter a Hacker News ID or URL", "error");
+          return;
+        }
+
+        try {
+          const hnId = extractHnId(input);
+          showStatus(`Fetching thread ${hnId}...`, "loading");
+
+          let data;
+
+          // Use mock data if debug=mock is set
+          if (isDebugMock && typeof MOCK_HN_RESPONSE !== "undefined") {
+            console.log(`🔧 Using mock data for ID: ${hnId}`);
+            // Simulate network delay for realistic feel
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            data = MOCK_HN_RESPONSE;
+          } else {
+            const response = await fetch(
+              `https://hn.algolia.com/api/v1/items/${hnId}`
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `Failed to fetch: ${response.status} ${response.statusText}`
+              );
+            }
+
+            data = await response.json();
+          }
+
+          threadData = data;
+
+          // Flatten comments for easier processing
+          allComments = [];
+          if (threadData.children) {
+            for (const child of threadData.children) {
+              flattenComments(child, 0, threadData.id, allComments);
+            }
+          }
+
+          // Add root comment entry
+          allComments.unshift({
+            id: threadData.id,
+            author: threadData.author,
+            text: threadData.title || "",
+            deleted: false,
+            depth: -1,
+            parentId: null,
+            children: [],
+            childIds: threadData.children
+              ? threadData.children.map((c) => c.id)
+              : [],
+          });
+
+          hideStatus();
+          renderThread();
+        } catch (error) {
+          showStatus(error.message, "error");
+        }
+      }
+
+      // ============================================
+      // Event Listeners
+      // ============================================
+      fetchBtn.addEventListener("click", fetchThread);
+
+      hnInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          fetchThread();
+        }
+      });
+
+      let searchTimeout;
+      searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 300);
+      });
+
+      searchAuthors.addEventListener("change", performSearch);
+      searchCase.addEventListener("change", performSearch);
+      searchPrev.addEventListener("click", navigateSearchPrev);
+      searchNext.addEventListener("click", navigateSearchNext);
+    </script>
+
+    <!-- ================================================================
+         MOCK DATA FOR DEBUG MODE - Remove this entire script tag in production
+         Usage: Add ?debug=mock to the URL to use this mock data
+         ================================================================ -->
+    <script>
+      const MOCK_HN_RESPONSE = {
+        id: 12345678,
+        title:
+          "Show HN: I built a tool to visualize Hacker News comment threads",
+        url: "https://example.com/hn-visualizer",
+        author: "pg",
+        created_at: "2024-01-15T10:30:00.000Z",
+        type: "story",
+        children: [
+          {
+            id: 12345679,
+            author: "dang",
+            text: "This is really cool! I've been wanting something like this for a long time. The nested comment structure on HN can get pretty hard to follow, especially in heated discussions with lots of back-and-forth.",
+            created_at: "2024-01-15T10:35:00.000Z",
+            children: [
+              {
+                id: 12345680,
+                author: "pg",
+                text: "Thanks! That was exactly the motivation. I found myself losing track of who was replying to whom in deep threads.",
+                created_at: "2024-01-15T10:40:00.000Z",
+                children: [
+                  {
+                    id: 12345681,
+                    author: "dang",
+                    text: "Have you considered adding keyboard shortcuts? j/k for next/prev comment would be great.",
+                    created_at: "2024-01-15T10:45:00.000Z",
+                    children: [
+                      {
+                        id: 12345682,
+                        author: "pg",
+                        text: "That's on the roadmap! Might add vim-style navigation too.",
+                        created_at: "2024-01-15T10:50:00.000Z",
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                id: 12345683,
+                author: "tptacek",
+                text: "The visualization approach reminds me of some academic work on forum thread analysis. Have you seen the ThreadVis paper from CHI 2006?",
+                created_at: "2024-01-15T10:42:00.000Z",
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 12345684,
+            author: "patio11",
+            text: "<p>This is a fantastic tool. I particularly like the collapse feature - it makes it much easier to skim through long discussions.</p><p>One suggestion: it would be helpful to see timestamps on comments to understand the flow of the conversation. Sometimes the order matters a lot for context.</p><p>Also, any plans to support other platforms like Reddit or Twitter threads? The same visualization concept could work really well there too.</p>",
+            created_at: "2024-01-15T11:00:00.000Z",
+            children: [
+              {
+                id: 12345685,
+                author: "pg",
+                text: "Great feedback! Timestamps are definitely something I'm considering. For other platforms, I'd need to look into their APIs - Reddit's is pretty accessible but Twitter's is... complicated these days.",
+                created_at: "2024-01-15T11:15:00.000Z",
+                children: [
+                  {
+                    id: 12345686,
+                    author: "patio11",
+                    text: "Yeah, the Twitter API situation is unfortunate. Reddit would probably be the most valuable next target given the similarity in discussion structure.",
+                    created_at: "2024-01-15T11:20:00.000Z",
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: 12345687,
+            author: null,
+            text: null,
+            deleted: true,
+            created_at: "2024-01-15T11:30:00.000Z",
+            children: [
+              {
+                id: 12345688,
+                author: "someone_else",
+                text: "Replying to a deleted comment here - the context is lost but this reply remains.",
+                created_at: "2024-01-15T11:35:00.000Z",
+                children: [],
+              },
+            ],
+          },
+          {
+            id: 12345689,
+            author: "jacobian",
+            text: "I love that this uses the Algolia API. That's the same API that powers the HN search, right? It's much more reliable than scraping.",
+            created_at: "2024-01-15T12:00:00.000Z",
+            children: [
+              {
+                id: 12345690,
+                author: "pg",
+                text: "Exactly! The official Firebase API is also an option but Algolia gives you the full thread structure in one request which is much more convenient.",
+                created_at: "2024-01-15T12:05:00.000Z",
+                children: [],
+              },
+              {
+                id: 12345691,
+                author: "simonw",
+                text: "I built a similar tool a while back for exporting threads. The Algolia API is great but watch out for rate limits on very active threads.",
+                created_at: "2024-01-15T12:10:00.000Z",
+                children: [
+                  {
+                    id: 12345692,
+                    author: "jacobian",
+                    text: "Good point about rate limits. Have you found any workarounds?",
+                    created_at: "2024-01-15T12:15:00.000Z",
+                    children: [
+                      {
+                        id: 12345693,
+                        author: "simonw",
+                        text: "Caching helps a lot. I cache responses for a few minutes since HN comments don't change that frequently. Also, you can paginate through children if a thread is huge.",
+                        created_at: "2024-01-15T12:20:00.000Z",
+                        children: [
+                          {
+                            id: 12345694,
+                            author: "jacobian",
+                            text: "Makes sense. Thanks for the tips!",
+                            created_at: "2024-01-15T12:25:00.000Z",
+                            children: [],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: 12345695,
+            author: "luu",
+            text: "This is a really long comment to test the truncation feature. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. And here's even more text to make sure we definitely exceed the 300 character limit for truncation testing purposes. The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.",
+            created_at: "2024-01-15T13:00:00.000Z",
+            children: [],
+          },
+          {
+            id: 12345696,
+            author: "rauchg",
+            text: "Nice work! The search feature is particularly useful. I often want to find specific mentions in long threads.",
+            created_at: "2024-01-15T14:00:00.000Z",
+            children: [
+              {
+                id: 12345697,
+                author: "gaearon",
+                text: "Agreed, search is key. Would be cool if it could also search by author name.",
+                created_at: "2024-01-15T14:05:00.000Z",
+                children: [
+                  {
+                    id: 12345698,
+                    author: "rauchg",
+                    text: "Looks like there's already a checkbox for that! 'Include authors' in the search options.",
+                    created_at: "2024-01-15T14:10:00.000Z",
+                    children: [
+                      {
+                        id: 12345699,
+                        author: "gaearon",
+                        text: "Oh nice, I missed that. Very thorough!",
+                        created_at: "2024-01-15T14:15:00.000Z",
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+    </script>
+    <!-- END MOCK DATA -->
+  </body>
+</html>
