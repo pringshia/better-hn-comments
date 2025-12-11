@@ -37,7 +37,7 @@ Each comment box should have:
 
 ### Body
 - **Comment text:** HTML content rendered properly
-- **Truncation:** Truncate at 300 characters with `[expand]`/`[collapse]` toggle
+- **Truncation:** Use CSS `line-clamp` to show 16 lines max, with `[expand]`/`[collapse]` toggle
 - **Fixed width:** ~320px per comment box
 
 ### Footer (for selected comment)
@@ -123,9 +123,10 @@ Keyboard navigation is disabled when focus is in a text input (search field, URL
 ## Layout
 
 ### No Horizontal Scrolling
-- Rows use `flex-wrap: wrap` instead of horizontal scroll
-- Comments wrap to next line if too many to fit
-- Selection changes only via buttons or arrow keys (no scrolling required)
+- Rows use `flex-wrap: nowrap` with `overflow: hidden`
+- Comments that don't fit are clipped (no scrollbar, no wrapping)
+- Selection changes only via buttons or arrow keys
+- Use ←→ arrows to navigate to clipped siblings
 
 ---
 
@@ -255,7 +256,7 @@ GET https://hn.algolia.com/api/v1/items/{id}
 
 - [ ] Single HTML file, vanilla JS, no build step
 - [ ] Fetch from Algolia API (with mock mode fallback)
-- [ ] Horizontal row layout with sibling comments (flex-wrap, no scroll)
+- [ ] Horizontal row layout with sibling comments (nowrap, overflow hidden)
 - [ ] Active comment has orange border; inactive siblings are grayed
 - [ ] Auto-select first child to create default path through tree
 - [ ] Click sibling to select it and rebuild child rows
@@ -268,7 +269,7 @@ GET https://hn.algolia.com/api/v1/items/{id}
 - [ ] Yellow highlight on search matches
 - [ ] Sort toggle: most-discussed-first (default ON) vs. API order
 - [ ] Sticky search bar
-- [ ] Comment text truncation at 300 chars with expand toggle
+- [ ] Comment text truncation at 16 lines (CSS line-clamp) with expand toggle
 - [ ] Author links to HN profile, comment links to HN
 - [ ] Deleted comments displayed but excluded from stats
 - [ ] Debug mock mode via URL parameter

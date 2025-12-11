@@ -286,10 +286,12 @@
         display: flex;
         gap: 12px;
         padding: 10px 0;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        overflow: hidden;
         border-bottom: 1px solid var(--hn-beige-dark);
         position: relative;
         transition: background-color 0.15s ease;
+        scroll-margin-top: 120px; /* Account for sticky search bar */
       }
 
       .comment-row:last-child {
@@ -397,9 +399,10 @@
       }
 
       .comment-text.truncated {
-        max-height: 80px;
+        display: -webkit-box;
+        -webkit-line-clamp: 16;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        position: relative;
       }
 
       .comment-text mark {
@@ -1010,17 +1013,16 @@
         // Text content
         const textEl = document.createElement("div");
         textEl.className = "comment-text";
-        textEl.dataset.fullText = comment.text;
 
         const plainText = stripHtml(comment.text);
-        const needsTruncation = plainText.length > 300;
+        // ~16 lines at ~30 chars/line = ~480 chars threshold
+        const needsTruncation = plainText.length > 480;
 
         if (comment.deleted) {
           textEl.textContent = "[comment deleted]";
         } else {
-          textEl.innerHTML = needsTruncation
-            ? truncateHtml(comment.text, 300)
-            : cleanHtmlContent(comment.text);
+          // Always render full HTML - CSS line-clamp handles truncation
+          textEl.innerHTML = cleanHtmlContent(comment.text);
           if (needsTruncation) {
             textEl.classList.add("truncated");
           }
@@ -1106,31 +1108,15 @@
         return boxEl;
       }
 
-      function truncateHtml(html, maxLength) {
-        const plainText = stripHtml(html);
-        if (plainText.length <= maxLength) {
-          return cleanHtmlContent(html);
-        }
-        return plainText.substring(0, maxLength) + "...";
-      }
-
       function toggleTextExpand(textEl, btn) {
         const isExpanded = !textEl.classList.contains("truncated");
 
         if (isExpanded) {
-          const plainText = stripHtml(textEl.dataset.fullText);
-          textEl.innerHTML = plainText.substring(0, 300) + "...";
           textEl.classList.add("truncated");
           btn.textContent = "[expand]";
         } else {
-          textEl.innerHTML = cleanHtmlContent(textEl.dataset.fullText);
           textEl.classList.remove("truncated");
           btn.textContent = "[collapse]";
-        }
-
-        // Re-apply search highlighting if active
-        if (searchInput.value.trim()) {
-          highlightSearchInComment(textEl);
         }
       }
 
