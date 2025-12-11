@@ -398,6 +398,11 @@
         overflow-wrap: break-word;
       }
 
+      .comment-text pre,
+      .comment-text table {
+        overflow: auto;
+      }
+
       .comment-text.truncated {
         display: -webkit-box;
         -webkit-line-clamp: 16;
@@ -480,12 +485,8 @@
         justify-content: center;
         min-width: 60px;
         padding: 10px;
-        background: linear-gradient(
-          90deg,
-          transparent 0%,
-          var(--hn-beige-dark) 100%
-        );
-        border: 2px dashed var(--border-color);
+        background: white;
+        border: 2px solid var(--border-color);
         border-radius: 4px;
         color: var(--text-muted);
         font-size: 11px;
@@ -1103,7 +1104,7 @@
 
           const userStat = document.createElement("span");
           userStat.className = "comment-stat";
-          userStat.textContent = `👤 ${stats.users} users`;
+          userStat.textContent = `${stats.users} people`;
           footerEl.appendChild(userStat);
         } else {
           const leafStat = document.createElement("span");
@@ -1339,6 +1340,8 @@
           showStatus("Please enter a Hacker News ID or URL", "error");
           return;
         }
+
+        hnInput.blur();
 
         try {
           const hnId = extractHnId(input);
