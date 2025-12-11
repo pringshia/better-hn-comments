@@ -39,6 +39,7 @@ Each comment box should have:
 - **Comment text:** HTML content rendered properly
 - **Truncation:** Use CSS `line-clamp` to show 16 lines max, with `[expand]`/`[collapse]` toggle
 - **Fixed width:** ~320px per comment box
+- **Code/table overflow:** `pre` and `table` elements have `overflow: auto` to handle long content
 
 ### Footer (for selected comment)
 - **Subtree stats:** "↓ X replies" and "👤 Y users" (unique participants in subtree)
@@ -120,6 +121,48 @@ Keyboard navigation is disabled when focus is in a text input (search field, URL
 
 ---
 
+## Copy Thread for LLM
+
+A floating button in the bottom-right corner for exporting thread context:
+
+### Button
+- **Label:** "📋 Copy row for LLM (X context + Y siblings)"
+- Only visible after thread data is loaded
+- Updates dynamically as user navigates
+
+### What Gets Copied
+1. **Context comments:** The original post + all ancestor comments leading to the current row
+2. **Sibling comments:** All comments in the currently focused row
+
+### Output Format
+```
+[original post by <author>]:
+<post title/text>
+
+[reply to <parent_author> by <author>]:
+<comment text>
+
+[reply #1 to <parent_author> by <sibling_author>]:
+<comment text>
+
+[reply #2 to <parent_author> by <sibling_author>]:
+<comment text>
+```
+
+### Visual Feedback
+- Button turns green and shows "✓ Copied!" for 1.5 seconds after successful copy
+
+---
+
+## Last Row Indicator
+
+The last comment row displays a diagonal stripe pattern to indicate the end of the thread:
+- Uses CSS `repeating-linear-gradient` with subtle stripes
+- Signals to users that pressing down arrow is pointless
+- Different pattern when row is focused
+
+---
+
 ## Layout
 
 ### No Horizontal Scrolling
@@ -142,25 +185,41 @@ The search/options toolbar should:
 
 ## Input Handling
 
-Accept either:
-- **Raw HN ID:** e.g., `39581733`
-- **Full HN URL:** e.g., `https://news.ycombinator.com/item?id=39581733`
+### Tabbed Input Interface
 
-Extract ID using regex: `/id=(\d+)/` or validate as numeric string.
+Two input modes accessible via tabs:
+
+#### Tab 1: HN Link/ID (default)
+- **Input field:** Accept raw HN ID (e.g., `39581733`) or full URL (e.g., `https://news.ycombinator.com/item?id=39581733`)
+- **Front page stories list:** Shows current HN front page stories below the input
+  - Displays: title, author, comment count
+  - Clicking a title loads that thread
+  - **Cached locally** with 60-minute TTL (localStorage)
+  - **Refresh link** to manually bust cache and reload
+- Extract ID using regex: `/id=(\d+)/` or validate as numeric string
+
+#### Tab 2: Custom JSON
+- **Textarea** for pasting custom JSON payloads
+- **Microcopy** explaining expected format:
+  - Root: `{ id, title, author, children: [...] }`
+  - Comments: `{ id, author, text, created_at?, children: [...] }`
+- **LLM tip:** Suggests a prompt to generate test payloads
+- Useful for testing, demos, or analyzing hypothetical discussions
 
 ---
 
 ## Debug/Mock Mode
 
-For development and testing when API is unavailable:
+For development and testing:
 
 ### Activation
 - URL parameter: `?debug=mock`
 
 ### Behavior
-- Display a **warning banner** at top: "🔧 Debug Mode: Using mock data. Any ID/URL will return the same test thread. [Disable]"
-- For any fetch request, return a static mock payload instead of calling the API
-- Add small simulated delay (e.g., 300ms) for realistic feel
+- Display a **warning banner** at top: "🔧 Debug Mode: Mock data has been pre-populated in the Custom JSON tab. [Disable]"
+- **Switches to Custom JSON tab** automatically
+- **Pre-populates textarea** with the mock payload (prettified JSON)
+- User can then click "Load JSON" to load the mock data
 
 ### Mock Data Structure
 Include in a **separate, clearly-marked `<script>` tag** at the end of the file for easy removal:
@@ -264,14 +323,20 @@ GET https://hn.algolia.com/api/v1/items/{id}
 - [ ] Sibling navigation buttons (Prev/Next) with edge detection
 - [ ] Keyboard navigation: ↑↓ for rows, ←→ for siblings, Enter to expand/collapse
 - [ ] Row focus highlight (10% darker background)
+- [ ] Last row visual indicator (diagonal stripe pattern)
 - [ ] Full-text search with match counter and Prev/Next navigation
 - [ ] Search options: include authors, case sensitivity
 - [ ] Yellow highlight on search matches
 - [ ] Sort toggle: most-discussed-first (default ON) vs. API order
 - [ ] Sticky search bar
 - [ ] Comment text truncation at 16 lines (CSS line-clamp) with expand toggle
+- [ ] Code/table overflow handling in comments
 - [ ] Author links to HN profile, comment links to HN
 - [ ] Deleted comments displayed but excluded from stats
-- [ ] Debug mock mode via URL parameter
+- [ ] Tabbed input: HN Link/ID tab with front page stories list
+- [ ] Tabbed input: Custom JSON tab for manual payloads
+- [ ] Front page stories cached with 60-min TTL and refresh option
+- [ ] Copy thread button for LLM export (context + siblings)
+- [ ] Debug mock mode pre-populates Custom JSON tab
 - [ ] HN orange/beige theme
 
