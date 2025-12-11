@@ -21,6 +21,7 @@
         --highlight-bg: #ffff00;
         --deleted-bg: #f0f0f0;
         --focus-ring: #ff6600;
+        --inactive-opacity: 0.6;
       }
 
       body {
@@ -102,10 +103,25 @@
         margin-bottom: 20px;
         border: 1px solid var(--border-color);
         display: none;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: none;
+        transition: box-shadow 0.2s;
       }
 
       .search-section.visible {
         display: block;
+      }
+
+      .search-section.stuck {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 0 0 4px 4px;
+        margin-left: -20px;
+        margin-right: -20px;
+        padding-left: 35px;
+        padding-right: 35px;
+        width: calc(100% + 40px);
       }
 
       .search-row {
@@ -165,6 +181,24 @@
         color: var(--text-muted);
         min-width: 80px;
         text-align: center;
+      }
+
+      /* View Options */
+      .view-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--hn-beige-dark);
+      }
+
+      .view-options label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--text-secondary);
+        cursor: pointer;
       }
 
       /* Status Messages */
@@ -238,7 +272,7 @@
         color: var(--text-secondary);
       }
 
-      /* Tree Container */
+      /* Tree Container - Horizontal Row Layout */
       .tree-container {
         display: none;
       }
@@ -247,35 +281,83 @@
         display: block;
       }
 
-      /* Comment Node */
-      .comment-node {
+      /* Comment Row - horizontal container for siblings */
+      .comment-row {
+        display: flex;
+        gap: 12px;
+        padding: 10px 0;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--hn-beige-dark);
         position: relative;
-        margin-left: 20px;
+        transition: background-color 0.15s ease;
       }
 
-      .comment-node.root {
-        margin-left: 0;
+      .comment-row:last-child {
+        border-bottom: none;
       }
 
+      /* Keyboard-focused row */
+      .comment-row.row-focused {
+        background-color: hsl(45, 47%, 87%); /* ~10% darker than beige */
+      }
+
+      /* Depth indicator */
+      .comment-row::before {
+        content: attr(data-depth-label);
+        position: absolute;
+        left: 0;
+        top: 5px;
+        font-size: 9px;
+        color: var(--text-muted);
+        background: var(--hn-beige);
+        padding: 2px 4px;
+        border-radius: 2px;
+      }
+
+      .comment-row {
+        padding-left: 50px;
+      }
+
+      /* Comment Box */
       .comment-box {
         background: white;
-        border: 1px solid var(--border-color);
+        border: 2px solid var(--border-color);
         border-radius: 4px;
         padding: 10px;
-        margin-bottom: 8px;
-        width: 350px;
+        width: 320px;
+        min-width: 320px;
         position: relative;
+        cursor: pointer;
+        transition: all 0.15s ease;
       }
 
-      .comment-box.focused {
+      /* Active (selected) comment */
+      .comment-box.active {
         border-color: var(--hn-orange);
         box-shadow: 0 0 0 2px rgba(255, 102, 0, 0.2);
+        opacity: 1;
+      }
+
+      /* Inactive (sibling) comment */
+      .comment-box.inactive {
+        opacity: var(--inactive-opacity);
+        border-color: var(--border-color);
+      }
+
+      .comment-box.inactive:hover {
+        opacity: 0.85;
+        border-color: var(--hn-orange-dark);
       }
 
       .comment-box.deleted {
         background: var(--deleted-bg);
         font-style: italic;
         color: var(--text-muted);
+      }
+
+      /* Search focused state */
+      .comment-box.search-focused {
+        box-shadow: 0 0 0 3px var(--highlight-bg);
       }
 
       .comment-header {
@@ -315,7 +397,7 @@
       }
 
       .comment-text.truncated {
-        max-height: 100px;
+        max-height: 80px;
         overflow: hidden;
         position: relative;
       }
@@ -340,71 +422,60 @@
         text-decoration: underline;
       }
 
-      /* Comment Actions */
-      .comment-actions {
+      /* Comment Footer with stats */
+      .comment-footer {
         display: flex;
         gap: 8px;
         margin-top: 8px;
-        padding-top: 8px;
+        padding-top: 6px;
         border-top: 1px solid var(--hn-beige-dark);
+        font-size: 10px;
+        color: var(--text-muted);
+        align-items: center;
         flex-wrap: wrap;
       }
 
-      .comment-actions button {
-        padding: 3px 8px;
-        font-size: 10px;
+      .comment-stat {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .comment-stat.has-children {
+        color: var(--hn-orange);
+        font-weight: bold;
+      }
+
+      /* Sibling navigation in footer */
+      .sibling-nav {
+        display: flex;
+        gap: 4px;
+        margin-left: auto;
+      }
+
+      .sibling-nav button {
+        padding: 2px 6px;
+        font-size: 9px;
         background: var(--hn-beige);
         color: var(--text-secondary);
         border: 1px solid var(--border-color);
       }
 
-      .comment-actions button:hover:not(:disabled) {
+      .sibling-nav button:hover:not(:disabled) {
         background: var(--hn-beige-dark);
       }
 
-      .comment-actions button:disabled {
+      .sibling-nav button:disabled {
         opacity: 0.4;
         cursor: not-allowed;
       }
 
-      /* Collapse Summary */
-      .collapse-summary {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 4px 8px;
-        background: var(--hn-beige);
-        border: 1px dashed var(--border-color);
-        border-radius: 3px;
-        font-size: 10px;
+      /* No children indicator */
+      .no-children-row {
+        padding: 15px 50px;
         color: var(--text-muted);
-        margin-left: 20px;
-        margin-bottom: 8px;
-        cursor: pointer;
-      }
-
-      .collapse-summary:hover {
-        background: var(--hn-beige-dark);
-      }
-
-      /* Tree Lines */
-      .children-container {
-        position: relative;
-        padding-left: 10px;
-        border-left: 1px solid var(--border-color);
-        margin-left: 10px;
-      }
-
-      .children-container.collapsed {
-        display: none;
-      }
-
-      /* Stats Badge */
-      .stats-badge {
-        display: inline-block;
-        font-size: 10px;
-        color: var(--text-muted);
-        margin-left: 5px;
+        font-style: italic;
+        font-size: 12px;
       }
     </style>
   </head>
@@ -458,6 +529,17 @@
           <button id="search-next" disabled>Next ▶</button>
         </div>
       </div>
+      <div class="view-options">
+        <label>
+          <input type="checkbox" id="sort-by-activity" checked /> Sort by most
+          discussed (participants)
+        </label>
+        <span
+          style="font-size: 10px; color: var(--text-muted); margin-left: auto"
+        >
+          ↑↓ rows • ←→ selection • Enter expand
+        </span>
+      </div>
     </div>
 
     <div id="thread-header" class="thread-header">
@@ -490,9 +572,11 @@
       // ============================================
       let threadData = null;
       let allComments = [];
+      let selectedPath = []; // Array of selected comment IDs at each depth
+      let sortByActivity = true; // Default ON
+      let focusedRowIndex = 0; // Currently keyboard-focused row
       let searchMatches = [];
       let currentMatchIndex = -1;
-      let focusedCommentId = null;
 
       // ============================================
       // DOM Elements
@@ -507,6 +591,8 @@
       const searchPrev = document.getElementById("search-prev");
       const searchNext = document.getElementById("search-next");
       const searchCounter = document.getElementById("search-counter");
+      const sortByActivityCheckbox =
+        document.getElementById("sort-by-activity");
       const threadHeader = document.getElementById("thread-header");
       const threadTitleLink = document.getElementById("thread-title-link");
       const threadAuthor = document.getElementById("thread-author");
@@ -570,7 +656,6 @@
           deleted: !node.author || node.deleted,
           depth: depth,
           parentId: parentId,
-          children: [],
           childIds: [],
         };
 
@@ -612,25 +697,22 @@
         return { count, users: users.size };
       }
 
-      function getSiblings(commentId) {
-        const comment = allComments.find((c) => c.id === commentId);
-        if (!comment || !comment.parentId)
-          return { prev: null, next: null, siblings: [] };
+      function getOrderedChildren(parentId) {
+        const parent = allComments.find((c) => c.id === parentId);
+        if (!parent || parent.childIds.length === 0) return [];
 
-        const parent = allComments.find((c) => c.id === comment.parentId);
-        if (!parent) return { prev: null, next: null, siblings: [] };
+        let childIds = [...parent.childIds];
 
-        const siblingIds = parent.childIds;
-        const currentIndex = siblingIds.indexOf(commentId);
+        if (sortByActivity) {
+          // Sort by unique participants in subtree (descending)
+          childIds.sort((a, b) => {
+            const statsA = calculateSubtreeStats(a);
+            const statsB = calculateSubtreeStats(b);
+            return statsB.users - statsA.users;
+          });
+        }
 
-        return {
-          prev: currentIndex > 0 ? siblingIds[currentIndex - 1] : null,
-          next:
-            currentIndex < siblingIds.length - 1
-              ? siblingIds[currentIndex + 1]
-              : null,
-          siblings: siblingIds,
-        };
+        return childIds;
       }
 
       function getParentLineage(commentId) {
@@ -643,6 +725,153 @@
         }
 
         return lineage;
+      }
+
+      // ============================================
+      // Selection & Navigation
+      // ============================================
+      function initializeSelectedPath() {
+        selectedPath = [];
+
+        // Start with root's children
+        const rootChildren = getOrderedChildren(threadData.id);
+        if (rootChildren.length === 0) return;
+
+        // Select first child at each level until we hit a leaf
+        let currentId = rootChildren[0];
+        selectedPath.push(currentId);
+
+        while (true) {
+          const children = getOrderedChildren(currentId);
+          if (children.length === 0) break;
+          currentId = children[0];
+          selectedPath.push(currentId);
+        }
+      }
+
+      function selectComment(commentId, depth) {
+        // Update selected path at this depth
+        selectedPath[depth] = commentId;
+
+        // Clear selections below this depth
+        selectedPath = selectedPath.slice(0, depth + 1);
+
+        // Auto-select first child at each subsequent level
+        let currentId = commentId;
+        while (true) {
+          const children = getOrderedChildren(currentId);
+          if (children.length === 0) break;
+          currentId = children[0];
+          selectedPath.push(currentId);
+        }
+
+        // Update focused row to match the clicked depth
+        focusedRowIndex = depth;
+
+        renderTree();
+        updateRowFocus();
+
+        // Re-apply search highlights
+        if (searchInput.value.trim()) {
+          document.querySelectorAll(".comment-text").forEach((el) => {
+            highlightSearchInComment(el);
+          });
+        }
+      }
+
+      // Update visual focus on rows
+      function updateRowFocus() {
+        const rows = document.querySelectorAll(".comment-row");
+        rows.forEach((row, index) => {
+          row.classList.toggle("row-focused", index === focusedRowIndex);
+        });
+      }
+
+      // Keyboard navigation: move focus between rows
+      function navigateRow(direction) {
+        const rows = document.querySelectorAll(".comment-row");
+        if (rows.length === 0) return;
+
+        if (direction === "up") {
+          focusedRowIndex = Math.max(0, focusedRowIndex - 1);
+        } else {
+          focusedRowIndex = Math.min(rows.length - 1, focusedRowIndex + 1);
+        }
+
+        updateRowFocus();
+
+        // Scroll the focused row into view
+        const focusedRow = rows[focusedRowIndex];
+        if (focusedRow) {
+          focusedRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }
+
+      // Keyboard navigation: change selection within focused row
+      function navigateSelection(direction) {
+        if (focusedRowIndex >= selectedPath.length) return;
+
+        const currentCommentId = selectedPath[focusedRowIndex];
+        if (!currentCommentId) return;
+
+        const comment = allComments.find((c) => c.id === currentCommentId);
+        if (!comment) return;
+
+        const parentId = comment.parentId || threadData.id;
+        const siblings = getOrderedChildren(parentId);
+        const currentIndex = siblings.indexOf(currentCommentId);
+
+        let newIndex;
+        if (direction === "left") {
+          newIndex = Math.max(0, currentIndex - 1);
+        } else {
+          newIndex = Math.min(siblings.length - 1, currentIndex + 1);
+        }
+
+        if (newIndex !== currentIndex) {
+          selectComment(siblings[newIndex], focusedRowIndex);
+        }
+      }
+
+      // Toggle expand/collapse of selected comment's text
+      function toggleSelectedCommentText() {
+        if (focusedRowIndex >= selectedPath.length) return;
+
+        const currentCommentId = selectedPath[focusedRowIndex];
+        if (!currentCommentId) return;
+
+        const commentBox = document.getElementById(
+          `comment-${currentCommentId}`
+        );
+        if (!commentBox) return;
+
+        const expandBtn = commentBox.querySelector(".expand-text-btn");
+        if (expandBtn) {
+          expandBtn.click();
+        }
+      }
+
+      function navigateToSibling(commentId, direction) {
+        const comment = allComments.find((c) => c.id === commentId);
+        if (!comment) return;
+
+        const parentId = comment.parentId || threadData.id;
+        const siblings = getOrderedChildren(parentId);
+        const currentIndex = siblings.indexOf(commentId);
+
+        let newIndex;
+        if (direction === "prev") {
+          newIndex = Math.max(0, currentIndex - 1);
+        } else {
+          newIndex = Math.min(siblings.length - 1, currentIndex + 1);
+        }
+
+        if (newIndex !== currentIndex) {
+          const depth = selectedPath.indexOf(commentId);
+          if (depth !== -1) {
+            selectComment(siblings[newIndex], depth);
+          }
+        }
       }
 
       // ============================================
@@ -670,39 +899,86 @@
         searchSection.classList.add("visible");
         treeContainer.classList.add("visible");
 
-        // Render tree
         renderTree();
       }
 
       function renderTree() {
         treeContainer.innerHTML = "";
 
-        if (!threadData.children || threadData.children.length === 0) {
+        const rootChildren = getOrderedChildren(threadData.id);
+        if (rootChildren.length === 0) {
           treeContainer.innerHTML =
-            '<p style="color: var(--text-muted); font-style: italic;">No comments yet.</p>';
+            '<p style="color: var(--text-muted); font-style: italic; padding: 15px;">No comments yet.</p>';
           return;
         }
 
-        for (const childId of threadData.children.map((c) => c.id)) {
-          const nodeEl = renderCommentNode(childId, true);
-          if (nodeEl) {
-            treeContainer.appendChild(nodeEl);
+        // Render each depth level as a row
+        let currentParentId = threadData.id;
+        let depth = 0;
+
+        while (true) {
+          const siblings = getOrderedChildren(currentParentId);
+          if (siblings.length === 0) {
+            // Show "no more replies" indicator if we went at least one level deep
+            if (depth > 0) {
+              const noChildrenEl = document.createElement("div");
+              noChildrenEl.className = "no-children-row";
+              noChildrenEl.textContent = "↳ No more replies in this branch";
+              treeContainer.appendChild(noChildrenEl);
+            }
+            break;
           }
+
+          const selectedAtThisDepth = selectedPath[depth];
+          const rowEl = renderCommentRow(siblings, selectedAtThisDepth, depth);
+          treeContainer.appendChild(rowEl);
+
+          // Move to next level (children of selected comment)
+          if (!selectedAtThisDepth) break;
+          currentParentId = selectedAtThisDepth;
+          depth++;
         }
       }
 
-      function renderCommentNode(commentId, isRoot = false) {
+      function renderCommentRow(siblingIds, selectedId, depth) {
+        const rowEl = document.createElement("div");
+        rowEl.className = "comment-row";
+        rowEl.dataset.depth = depth;
+        rowEl.dataset.depthLabel = `Level ${depth + 1}`;
+
+        for (const commentId of siblingIds) {
+          const isSelected = commentId === selectedId;
+          const boxEl = renderCommentBox(commentId, isSelected, depth);
+          rowEl.appendChild(boxEl);
+        }
+
+        return rowEl;
+      }
+
+      function renderCommentBox(commentId, isSelected, depth) {
         const comment = allComments.find((c) => c.id === commentId);
-        if (!comment) return null;
+        if (!comment) return document.createElement("div");
 
-        const nodeEl = document.createElement("div");
-        nodeEl.className = `comment-node${isRoot ? " root" : ""}`;
-        nodeEl.dataset.commentId = commentId;
-
-        // Comment box
         const boxEl = document.createElement("div");
-        boxEl.className = `comment-box${comment.deleted ? " deleted" : ""}`;
+        boxEl.className = "comment-box";
         boxEl.id = `comment-${commentId}`;
+        boxEl.dataset.commentId = commentId;
+
+        if (isSelected) {
+          boxEl.classList.add("active");
+        } else {
+          boxEl.classList.add("inactive");
+        }
+
+        if (comment.deleted) {
+          boxEl.classList.add("deleted");
+        }
+
+        // Click to select (unless clicking a link)
+        boxEl.addEventListener("click", (e) => {
+          if (e.target.tagName === "A" || e.target.tagName === "BUTTON") return;
+          selectComment(commentId, depth);
+        });
 
         // Header
         const headerEl = document.createElement("div");
@@ -757,61 +1033,77 @@
           const expandBtn = document.createElement("button");
           expandBtn.className = "expand-text-btn";
           expandBtn.textContent = "[expand]";
-          expandBtn.onclick = () => toggleTextExpand(textEl, expandBtn);
+          expandBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleTextExpand(textEl, expandBtn);
+          };
           boxEl.appendChild(expandBtn);
         }
 
-        // Actions
-        const actionsEl = document.createElement("div");
-        actionsEl.className = "comment-actions";
+        // Footer with stats and navigation
+        const footerEl = document.createElement("div");
+        footerEl.className = "comment-footer";
 
         // Subtree stats
         const stats = calculateSubtreeStats(commentId);
         const hasChildren = comment.childIds.length > 0;
 
         if (hasChildren) {
-          const collapseBtn = document.createElement("button");
-          collapseBtn.textContent = `▼ Collapse (${stats.count - 1} replies, ${
-            stats.users
-          } users)`;
-          collapseBtn.onclick = () => toggleCollapse(nodeEl, collapseBtn);
-          actionsEl.appendChild(collapseBtn);
+          const childStat = document.createElement("span");
+          childStat.className = "comment-stat has-children";
+          childStat.textContent = `↓ ${stats.count - 1} replies`;
+          footerEl.appendChild(childStat);
+
+          const userStat = document.createElement("span");
+          userStat.className = "comment-stat";
+          userStat.textContent = `👤 ${stats.users} users`;
+          footerEl.appendChild(userStat);
+        } else {
+          const leafStat = document.createElement("span");
+          leafStat.className = "comment-stat";
+          leafStat.textContent = "leaf";
+          footerEl.appendChild(leafStat);
         }
 
-        // Sibling navigation
-        const siblings = getSiblings(commentId);
+        // Sibling navigation (only for active comment)
+        if (isSelected) {
+          const parentId = comment.parentId || threadData.id;
+          const siblings = getOrderedChildren(parentId);
+          const currentIndex = siblings.indexOf(commentId);
 
-        const prevSibBtn = document.createElement("button");
-        prevSibBtn.textContent = "◀ Prev sibling";
-        prevSibBtn.disabled = !siblings.prev;
-        prevSibBtn.onclick = () => navigateToComment(siblings.prev);
-        actionsEl.appendChild(prevSibBtn);
+          const sibNavEl = document.createElement("div");
+          sibNavEl.className = "sibling-nav";
 
-        const nextSibBtn = document.createElement("button");
-        nextSibBtn.textContent = "Next sibling ▶";
-        nextSibBtn.disabled = !siblings.next;
-        nextSibBtn.onclick = () => navigateToComment(siblings.next);
-        actionsEl.appendChild(nextSibBtn);
+          const prevBtn = document.createElement("button");
+          prevBtn.textContent = "◀ Prev";
+          prevBtn.disabled = currentIndex === 0;
+          prevBtn.onclick = (e) => {
+            e.stopPropagation();
+            navigateToSibling(commentId, "prev");
+          };
+          sibNavEl.appendChild(prevBtn);
 
-        boxEl.appendChild(actionsEl);
-        nodeEl.appendChild(boxEl);
+          const posIndicator = document.createElement("span");
+          posIndicator.style.fontSize = "9px";
+          posIndicator.style.color = "var(--text-muted)";
+          posIndicator.textContent = `${currentIndex + 1}/${siblings.length}`;
+          sibNavEl.appendChild(posIndicator);
 
-        // Children container
-        if (hasChildren) {
-          const childrenEl = document.createElement("div");
-          childrenEl.className = "children-container";
+          const nextBtn = document.createElement("button");
+          nextBtn.textContent = "Next ▶";
+          nextBtn.disabled = currentIndex === siblings.length - 1;
+          nextBtn.onclick = (e) => {
+            e.stopPropagation();
+            navigateToSibling(commentId, "next");
+          };
+          sibNavEl.appendChild(nextBtn);
 
-          for (const childId of comment.childIds) {
-            const childNode = renderCommentNode(childId);
-            if (childNode) {
-              childrenEl.appendChild(childNode);
-            }
-          }
-
-          nodeEl.appendChild(childrenEl);
+          footerEl.appendChild(sibNavEl);
         }
 
-        return nodeEl;
+        boxEl.appendChild(footerEl);
+
+        return boxEl;
       }
 
       function truncateHtml(html, maxLength) {
@@ -819,8 +1111,6 @@
         if (plainText.length <= maxLength) {
           return cleanHtmlContent(html);
         }
-
-        // Simple truncation - just use plain text for truncated version
         return plainText.substring(0, maxLength) + "...";
       }
 
@@ -828,13 +1118,11 @@
         const isExpanded = !textEl.classList.contains("truncated");
 
         if (isExpanded) {
-          // Collapse
           const plainText = stripHtml(textEl.dataset.fullText);
           textEl.innerHTML = plainText.substring(0, 300) + "...";
           textEl.classList.add("truncated");
           btn.textContent = "[expand]";
         } else {
-          // Expand
           textEl.innerHTML = cleanHtmlContent(textEl.dataset.fullText);
           textEl.classList.remove("truncated");
           btn.textContent = "[collapse]";
@@ -843,84 +1131,6 @@
         // Re-apply search highlighting if active
         if (searchInput.value.trim()) {
           highlightSearchInComment(textEl);
-        }
-      }
-
-      function toggleCollapse(nodeEl, btn) {
-        const childrenEl = nodeEl.querySelector(":scope > .children-container");
-        if (!childrenEl) return;
-
-        const isCollapsed = childrenEl.classList.contains("collapsed");
-        const commentId = parseInt(nodeEl.dataset.commentId);
-        const stats = calculateSubtreeStats(commentId);
-
-        if (isCollapsed) {
-          // Expand
-          childrenEl.classList.remove("collapsed");
-          btn.textContent = `▼ Collapse (${stats.count - 1} replies, ${
-            stats.users
-          } users)`;
-
-          // Remove summary if exists
-          const summary = nodeEl.querySelector(":scope > .collapse-summary");
-          if (summary) summary.remove();
-        } else {
-          // Collapse
-          childrenEl.classList.add("collapsed");
-          btn.textContent = `▶ Expand (${stats.count - 1} replies, ${
-            stats.users
-          } users)`;
-
-          // Add summary
-          const summary = document.createElement("div");
-          summary.className = "collapse-summary";
-          summary.textContent = `${stats.count - 1} hidden replies from ${
-            stats.users
-          } users`;
-          summary.onclick = () => toggleCollapse(nodeEl, btn);
-          nodeEl.appendChild(summary);
-        }
-      }
-
-      function expandToComment(commentId) {
-        const lineage = getParentLineage(commentId);
-
-        for (const ancestorId of lineage) {
-          const ancestorNode = document.querySelector(
-            `.comment-node[data-comment-id="${ancestorId}"]`
-          );
-          if (!ancestorNode) continue;
-
-          const childrenEl = ancestorNode.querySelector(
-            ":scope > .children-container"
-          );
-          if (childrenEl && childrenEl.classList.contains("collapsed")) {
-            const collapseBtn = ancestorNode.querySelector(
-              ".comment-actions button"
-            );
-            if (collapseBtn && collapseBtn.textContent.includes("Expand")) {
-              toggleCollapse(ancestorNode, collapseBtn);
-            }
-          }
-        }
-      }
-
-      function navigateToComment(commentId) {
-        if (!commentId) return;
-
-        // Remove previous focus
-        const prevFocused = document.querySelector(".comment-box.focused");
-        if (prevFocused) prevFocused.classList.remove("focused");
-
-        // Expand path to comment
-        expandToComment(commentId);
-
-        // Focus and scroll to comment
-        const commentBox = document.getElementById(`comment-${commentId}`);
-        if (commentBox) {
-          commentBox.classList.add("focused");
-          commentBox.scrollIntoView({ behavior: "smooth", block: "center" });
-          focusedCommentId = commentId;
         }
       }
 
@@ -936,6 +1146,13 @@
           parent.replaceChild(document.createTextNode(mark.textContent), mark);
           parent.normalize();
         });
+
+        // Clear search focus styling
+        document
+          .querySelectorAll(".comment-box.search-focused")
+          .forEach((el) => {
+            el.classList.remove("search-focused");
+          });
 
         searchMatches = [];
         currentMatchIndex = -1;
@@ -953,6 +1170,7 @@
         // Find all matching comments
         for (const comment of allComments) {
           if (comment.deleted) continue;
+          if (comment.id === threadData.id) continue; // Skip root
 
           const textContent = stripHtml(comment.text);
           const authorMatch =
@@ -963,7 +1181,6 @@
             searchMatches.push(comment.id);
           }
 
-          // Reset regex lastIndex
           regex.lastIndex = 0;
         }
 
@@ -977,8 +1194,53 @@
         // Navigate to first match
         if (searchMatches.length > 0) {
           currentMatchIndex = 0;
-          navigateToComment(searchMatches[0]);
+          navigateToSearchMatch(searchMatches[0]);
           updateSearchCounter();
+        }
+      }
+
+      function navigateToSearchMatch(commentId) {
+        // Build the path to this comment
+        const lineage = getParentLineage(commentId);
+
+        // Reset selected path to follow this lineage
+        selectedPath = [];
+
+        // Add each ancestor to the path
+        for (const ancestorId of lineage) {
+          if (ancestorId !== threadData.id) {
+            selectedPath.push(ancestorId);
+          }
+        }
+
+        // Add the target comment itself
+        selectedPath.push(commentId);
+
+        // Continue selection to first children below
+        let currentId = commentId;
+        while (true) {
+          const children = getOrderedChildren(currentId);
+          if (children.length === 0) break;
+          currentId = children[0];
+          selectedPath.push(currentId);
+        }
+
+        // Update focused row to the depth of the found comment
+        focusedRowIndex = selectedPath.indexOf(commentId);
+        if (focusedRowIndex === -1) focusedRowIndex = 0;
+
+        renderTree();
+        updateRowFocus();
+
+        // Re-apply highlights and scroll to the match
+        document.querySelectorAll(".comment-text").forEach((el) => {
+          highlightSearchInComment(el);
+        });
+
+        const commentBox = document.getElementById(`comment-${commentId}`);
+        if (commentBox) {
+          commentBox.classList.add("search-focused");
+          commentBox.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }
 
@@ -1024,7 +1286,7 @@
       function navigateSearchPrev() {
         if (currentMatchIndex > 0) {
           currentMatchIndex--;
-          navigateToComment(searchMatches[currentMatchIndex]);
+          navigateToSearchMatch(searchMatches[currentMatchIndex]);
           updateSearchCounter();
         }
       }
@@ -1032,7 +1294,7 @@
       function navigateSearchNext() {
         if (currentMatchIndex < searchMatches.length - 1) {
           currentMatchIndex++;
-          navigateToComment(searchMatches[currentMatchIndex]);
+          navigateToSearchMatch(searchMatches[currentMatchIndex]);
           updateSearchCounter();
         }
       }
@@ -1053,10 +1315,8 @@
 
           let data;
 
-          // Use mock data if debug=mock is set
           if (isDebugMock && typeof MOCK_HN_RESPONSE !== "undefined") {
             console.log(`🔧 Using mock data for ID: ${hnId}`);
-            // Simulate network delay for realistic feel
             await new Promise((resolve) => setTimeout(resolve, 300));
             data = MOCK_HN_RESPONSE;
           } else {
@@ -1083,7 +1343,7 @@
             }
           }
 
-          // Add root comment entry
+          // Add root entry
           allComments.unshift({
             id: threadData.id,
             author: threadData.author,
@@ -1091,14 +1351,18 @@
             deleted: false,
             depth: -1,
             parentId: null,
-            children: [],
             childIds: threadData.children
               ? threadData.children.map((c) => c.id)
               : [],
           });
 
+          // Initialize selection
+          initializeSelectedPath();
+          focusedRowIndex = 0;
+
           hideStatus();
           renderThread();
+          updateRowFocus();
         } catch (error) {
           showStatus(error.message, "error");
         }
@@ -1125,6 +1389,67 @@
       searchCase.addEventListener("change", performSearch);
       searchPrev.addEventListener("click", navigateSearchPrev);
       searchNext.addEventListener("click", navigateSearchNext);
+
+      sortByActivityCheckbox.addEventListener("change", () => {
+        sortByActivity = sortByActivityCheckbox.checked;
+        if (threadData) {
+          initializeSelectedPath();
+          focusedRowIndex = 0;
+          renderTree();
+          updateRowFocus();
+          // Re-apply search if active
+          if (searchInput.value.trim()) {
+            performSearch();
+          }
+        }
+      });
+
+      // Keyboard navigation
+      document.addEventListener("keydown", (e) => {
+        // Only handle if we have data and not typing in an input
+        if (!threadData) return;
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+          return;
+
+        switch (e.key) {
+          case "ArrowUp":
+            e.preventDefault();
+            navigateRow("up");
+            break;
+          case "ArrowDown":
+            e.preventDefault();
+            navigateRow("down");
+            break;
+          case "ArrowLeft":
+            e.preventDefault();
+            navigateSelection("left");
+            break;
+          case "ArrowRight":
+            e.preventDefault();
+            navigateSelection("right");
+            break;
+          case "Enter":
+            e.preventDefault();
+            toggleSelectedCommentText();
+            break;
+        }
+      });
+
+      // Sticky search bar detection
+      const stickyObserver = new IntersectionObserver(
+        ([entry]) => {
+          // When the sentinel goes out of view, the search bar is "stuck"
+          searchSection.classList.toggle("stuck", !entry.isIntersecting);
+        },
+        { threshold: 0, rootMargin: "-1px 0px 0px 0px" }
+      );
+
+      // Create a sentinel element right before the search section
+      const stickySentinel = document.createElement("div");
+      stickySentinel.style.height = "1px";
+      stickySentinel.style.marginBottom = "-1px";
+      searchSection.parentNode.insertBefore(stickySentinel, searchSection);
+      stickyObserver.observe(stickySentinel);
     </script>
 
     <!-- ================================================================
