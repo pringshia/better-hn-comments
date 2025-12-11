@@ -43,10 +43,121 @@
       /* Input Section */
       .input-section {
         background: white;
-        padding: 15px;
         border-radius: 4px;
         margin-bottom: 20px;
         border: 1px solid var(--border-color);
+      }
+
+      .input-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .input-tab {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color 0.15s, border-color 0.15s;
+      }
+
+      .input-tab:hover {
+        color: var(--text-color);
+      }
+
+      .input-tab.active {
+        color: var(--hn-orange);
+        border-bottom-color: var(--hn-orange);
+      }
+
+      .input-tab-content {
+        display: none;
+        padding: 15px;
+      }
+
+      .input-tab-content.active {
+        display: block;
+      }
+
+      .front-page-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+        margin-bottom: 8px;
+      }
+
+      .front-page-header span {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .front-page-refresh {
+        font-size: 11px;
+        color: var(--text-muted);
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .front-page-refresh:hover {
+        color: var(--hn-orange);
+        text-decoration: underline;
+      }
+
+      .front-page-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 280px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+      }
+
+      .front-page-item {
+        padding: 8px 10px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .front-page-item:last-child {
+        border-bottom: none;
+      }
+
+      .front-page-item:hover {
+        /* background: var(--hn-beige-dark); */
+      }
+
+      .front-page-title {
+        color: var(--text-color);
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .front-page-title:hover {
+        color: var(--hn-orange);
+      }
+
+      .front-page-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .front-page-loading,
+      .front-page-error {
+        font-size: 12px;
+        color: var(--text-muted);
+        padding: 15px 0;
+      }
+
+      .front-page-error {
+        color: var(--error-color);
       }
 
       .input-section label {
@@ -329,9 +440,34 @@
         border-bottom: none;
       }
 
+      /* Last comment row (before .no-children-row) */
+      .comment-row:has(+ .no-children-row) {
+        border-bottom: none;
+        background-color: transparent;
+        opacity: 0.8;
+        background-size: 10px 10px;
+        background-image: repeating-linear-gradient(
+          45deg,
+          var(--text-muted) 0,
+          var(--hn-beige-dark) 1px,
+          transparent 0,
+          transparent 50%
+        );
+      }
+
       /* Keyboard-focused row */
       .comment-row.row-focused {
         background-color: hsl(45, 47%, 87%); /* ~10% darker than beige */
+      }
+
+      .comment-row:has(+ .no-children-row).row-focused {
+        background-image: repeating-linear-gradient(
+          45deg,
+          var(--hn-orange-dark) 0,
+          var(--hn-beige-dark) 1px,
+          transparent 0,
+          transparent 50%
+        );
       }
 
       /* Depth indicator */
@@ -373,13 +509,19 @@
 
       /* Inactive (sibling) comment */
       .comment-box.inactive {
-        opacity: var(--inactive-opacity);
         border-color: var(--border-color);
       }
 
       .comment-box.inactive:hover {
-        opacity: 0.85;
         border-color: var(--hn-orange-dark);
+      }
+
+      .comment-box.inactive > div {
+        opacity: var(--inactive-opacity);
+      }
+
+      .comment-box.inactive:hover > div {
+        opacity: 0.85;
       }
 
       .comment-box.deleted {
@@ -476,7 +618,6 @@
 
       .comment-stat {
         display: flex;
-        align-items: center;
         gap: 3px;
       }
 
@@ -490,6 +631,7 @@
         display: flex;
         gap: 4px;
         margin-left: auto;
+        align-items: center;
       }
 
       .sibling-nav button {
@@ -538,6 +680,37 @@
         font-style: italic;
         font-size: 12px;
       }
+
+      /* Floating copy button */
+      .floating-copy-btn {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 16px;
+        background-color: var(--hn-orange);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: background-color 0.15s, transform 0.1s;
+        z-index: 1000;
+      }
+
+      .floating-copy-btn:hover {
+        background-color: var(--hn-orange-dark);
+      }
+
+      .floating-copy-btn:active {
+        transform: scale(0.98);
+      }
+
+      .floating-copy-btn.copied {
+        background-color: #28a745;
+      }
     </style>
   </head>
   <body>
@@ -562,42 +735,56 @@
       <a href="?" style="color: #856404">Disable</a>
     </div>
 
-    <div id="input-section-normal" class="input-section">
-      <label for="hn-input">Enter a Hacker News post ID or URL:</label>
-      <div class="input-row">
-        <input
-          type="text"
-          id="hn-input"
-          placeholder="e.g., 39581733 or https://news.ycombinator.com/item?id=39581733"
-        />
-        <button id="fetch-btn">Fetch Thread</button>
+    <div class="input-section">
+      <div class="input-tabs">
+        <button class="input-tab active" data-tab="hn-link">HN Link/ID</button>
+        <button class="input-tab" data-tab="custom-json">Custom JSON</button>
       </div>
-    </div>
 
-    <div id="input-section-manual" class="input-section" style="display: none">
-      <label for="manual-json">Paste custom JSON payload:</label>
-      <textarea
-        id="manual-json"
-        class="manual-json-input"
-        placeholder='{"id": 123, "title": "Post title", "author": "username", "children": [...]}'
-      ></textarea>
-      <div class="input-row" style="margin-top: 10px">
-        <button id="load-json-btn">Load JSON</button>
+      <div id="tab-hn-link" class="input-tab-content active">
+        <label for="hn-input">Enter a Hacker News post ID or URL:</label>
+        <div class="input-row">
+          <input
+            type="text"
+            id="hn-input"
+            placeholder="e.g., 39581733 or https://news.ycombinator.com/item?id=39581733"
+          />
+          <button id="fetch-btn">Fetch Thread</button>
+        </div>
+        <div class="front-page-header">
+          <span>Or pick from the front page:</span>
+          <a id="front-page-refresh" class="front-page-refresh">refresh</a>
+        </div>
+        <div id="front-page-container">
+          <div class="front-page-loading">Loading front page stories...</div>
+        </div>
       </div>
-      <p class="microcopy">
-        Expected format: <code>{ id, title, author, children: [...] }</code
-        ><br />
-        Each comment:
-        <code>{ id, author, text, created_at?, children: [...] }</code
-        ><br /><br />
-        💡 Tip: Have an LLM generate the payload with a prompt like:<br />
-        <code
-          >Generate a sample JSON payload for a nested HN discussion that might
-          be returned via the Algolia API. The payload should contain no more
-          than 40 comments and will be for an article titled "Show HN: I built a
-          tool to visualize Hacker News comment threads"</code
-        >
-      </p>
+
+      <div id="tab-custom-json" class="input-tab-content">
+        <label for="manual-json">Paste custom JSON payload:</label>
+        <textarea
+          id="manual-json"
+          class="manual-json-input"
+          placeholder='{"id": 123, "title": "Post title", "author": "username", "children": [...]}'
+        ></textarea>
+        <div class="input-row" style="margin-top: 10px">
+          <button id="load-json-btn">Load JSON</button>
+        </div>
+        <p class="microcopy">
+          Expected format: <code>{ id, title, author, children: [...] }</code
+          ><br />
+          Each comment:
+          <code>{ id, author, text, created_at?, children: [...] }</code
+          ><br /><br />
+          💡 Tip: Have an LLM generate the payload with a prompt like:<br />
+          <code
+            >Generate a sample JSON payload for a nested HN discussion that
+            might be returned via the Algolia API. The payload should contain no
+            more than 40 comments and will be for an article titled "Show HN: I
+            built a tool to visualize Hacker News comment threads"</code
+          >
+        </p>
+      </div>
     </div>
 
     <div id="status" class="status"></div>
@@ -607,7 +794,7 @@
         <input type="text" id="search-input" placeholder="Search comments..." />
         <div class="search-options">
           <label>
-            <input type="checkbox" id="search-authors" /> Include authors
+            <input type="checkbox" id="search-authors" /> Search author names
           </label>
           <label>
             <input type="checkbox" id="search-case" /> Case sensitive
@@ -645,27 +832,146 @@
 
     <div id="tree-container" class="tree-container"></div>
 
+    <button id="copy-thread-btn" class="floating-copy-btn">
+      📋 Copy row for LLM (0 context + 0 siblings)
+    </button>
+
     <script>
       // ============================================
       // Debug Mode Detection
       // ============================================
       const urlParams = new URLSearchParams(window.location.search);
       const isDebugMock = urlParams.get("debug") === "mock";
-      const isDebugManual = urlParams.get("debug") === "manual";
 
-      if (isDebugMock) {
-        console.log("🔧 Debug mode enabled: using mock data");
-        document.getElementById("debug-banner").style.display = "block";
+      // Tab switching functionality
+      function switchTab(tabName) {
+        document.querySelectorAll(".input-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.tab === tabName);
+        });
+        document.querySelectorAll(".input-tab-content").forEach((content) => {
+          content.classList.toggle("active", content.id === `tab-${tabName}`);
+        });
       }
 
-      if (isDebugManual) {
-        console.log("🔧 Debug mode enabled: manual JSON input");
+      document.querySelectorAll(".input-tab").forEach((tab) => {
+        tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+      });
+
+      // Debug mock mode: switch to JSON tab and pre-populate with mock data
+      if (isDebugMock && typeof MOCK_HN_RESPONSE !== "undefined") {
+        console.log("🔧 Debug mode enabled: mock data pre-populated");
         document.getElementById("debug-banner").style.display = "block";
         document.getElementById("debug-banner-text").textContent =
-          "Manual JSON input mode. Paste your custom payload below.";
-        document.getElementById("input-section-normal").style.display = "none";
-        document.getElementById("input-section-manual").style.display = "block";
+          "Mock data has been pre-populated in the Custom JSON tab.";
+        switchTab("custom-json");
+        document.getElementById("manual-json").value = JSON.stringify(
+          MOCK_HN_RESPONSE,
+          null,
+          2
+        );
       }
+
+      // ============================================
+      // Front Page Stories
+      // ============================================
+      const FRONT_PAGE_CACHE_KEY = "hn_front_page_cache";
+      const FRONT_PAGE_CACHE_TTL = 60 * 60 * 1000; // 60 minutes in ms
+
+      async function fetchFrontPageStories(bustCache = false) {
+        const container = document.getElementById("front-page-container");
+
+        // Check cache first
+        if (!bustCache) {
+          const cached = localStorage.getItem(FRONT_PAGE_CACHE_KEY);
+          if (cached) {
+            try {
+              const { data, timestamp } = JSON.parse(cached);
+              if (Date.now() - timestamp < FRONT_PAGE_CACHE_TTL) {
+                renderFrontPageStories(data);
+                return;
+              }
+            } catch (e) {
+              // Invalid cache, continue to fetch
+            }
+          }
+        }
+
+        // Show loading state
+        container.innerHTML =
+          '<div class="front-page-loading">Loading front page stories...</div>';
+
+        try {
+          const response = await fetch(
+            "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30"
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch front page");
+          }
+
+          const data = await response.json();
+
+          // Cache the response
+          localStorage.setItem(
+            FRONT_PAGE_CACHE_KEY,
+            JSON.stringify({ data: data.hits, timestamp: Date.now() })
+          );
+
+          renderFrontPageStories(data.hits);
+        } catch (error) {
+          container.innerHTML = `<div class="front-page-error">Failed to load front page: ${error.message}</div>`;
+        }
+      }
+
+      function renderFrontPageStories(stories) {
+        const container = document.getElementById("front-page-container");
+
+        if (!stories || stories.length === 0) {
+          container.innerHTML =
+            '<div class="front-page-error">No stories found</div>';
+          return;
+        }
+
+        const list = document.createElement("ul");
+        list.className = "front-page-list";
+
+        stories.forEach((story) => {
+          const item = document.createElement("li");
+          item.className = "front-page-item";
+
+          const title = document.createElement("a");
+          title.className = "front-page-title";
+          title.textContent = story.title || "[No title]";
+          title.addEventListener("click", () => {
+            document.getElementById("hn-input").value = story.objectID;
+            fetchThread();
+          });
+
+          const meta = document.createElement("div");
+          meta.className = "front-page-meta";
+          meta.textContent = `by ${story.author || "unknown"} · ${
+            story.num_comments ?? 0
+          } comments`;
+
+          item.appendChild(title);
+          item.appendChild(meta);
+          list.appendChild(item);
+        });
+
+        container.innerHTML = "";
+        container.appendChild(list);
+      }
+
+      // Refresh button handler
+      document
+        .getElementById("front-page-refresh")
+        .addEventListener("click", (e) => {
+          e.preventDefault();
+          fetchFrontPageStories(true);
+        });
+
+      // Load front page stories on init
+      fetchFrontPageStories();
 
       // ============================================
       // Global State
@@ -700,6 +1006,7 @@
       const threadAuthor = document.getElementById("thread-author");
       const threadHnLink = document.getElementById("thread-hn-link");
       const threadStats = document.getElementById("thread-stats");
+      const copyThreadBtn = document.getElementById("copy-thread-btn");
       const treeContainer = document.getElementById("tree-container");
 
       // ============================================
@@ -744,6 +1051,140 @@
       function escapeRegex(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       }
+
+      // ============================================
+      // Copy Thread Functionality
+      // ============================================
+      function getThreadDataForCopy() {
+        if (!threadData || selectedPath.length === 0) return null;
+
+        const result = {
+          ancestors: [],
+          siblings: [],
+        };
+
+        // Add root as first ancestor
+        result.ancestors.push({
+          id: threadData.id,
+          author: threadData.author || "unknown",
+          text: threadData.title || "",
+          parentAuthor: null,
+        });
+
+        // Add selected comments from each row leading up to (but not including) current row
+        for (let i = 0; i < focusedRowIndex && i < selectedPath.length; i++) {
+          const commentId = selectedPath[i];
+          const comment = allComments.find((c) => c.id === commentId);
+          if (comment) {
+            const parentAuthor =
+              i === 0
+                ? threadData.author || "unknown"
+                : allComments.find((c) => c.id === selectedPath[i - 1])
+                    ?.author || "unknown";
+            result.ancestors.push({ ...comment, parentAuthor });
+          }
+        }
+
+        // Get siblings in the focused row
+        const rows = document.querySelectorAll(".comment-row");
+        if (rows[focusedRowIndex]) {
+          const boxes = rows[focusedRowIndex].querySelectorAll(".comment-box");
+          const parentAuthor =
+            focusedRowIndex > 0 && selectedPath[focusedRowIndex - 1]
+              ? allComments.find(
+                  (c) => c.id === selectedPath[focusedRowIndex - 1]
+                )?.author || "unknown"
+              : threadData.author || "unknown";
+
+          boxes.forEach((box) => {
+            const commentId = parseInt(box.dataset.commentId);
+            const comment = allComments.find((c) => c.id === commentId);
+            if (comment) {
+              result.siblings.push({ ...comment, parentAuthor });
+            }
+          });
+        }
+
+        return result;
+      }
+
+      function formatThreadForClipboard(data) {
+        if (!data) return "";
+
+        const lines = [];
+
+        // Format ancestors
+        data.ancestors.forEach((comment, index) => {
+          const author = comment.author || "unknown";
+          const text = stripHtml(comment.text || "").trim();
+
+          if (index === 0) {
+            // Root/original post
+            lines.push(`[original post by ${author}]:`);
+            lines.push(text || "(no text)");
+          } else {
+            lines.push(`[reply to ${comment.parentAuthor} by ${author}]:`);
+            lines.push(text);
+          }
+          lines.push("");
+        });
+
+        // Format siblings
+        data.siblings.forEach((comment, index) => {
+          const author = comment.author || "unknown";
+          const text = stripHtml(comment.text || "").trim();
+          const replyNum = data.siblings.length > 1 ? `#${index + 1} ` : "";
+
+          lines.push(
+            `[reply ${replyNum}to ${comment.parentAuthor} by ${author}]:`
+          );
+          lines.push(text);
+          lines.push("");
+        });
+
+        return lines.join("\n").trim();
+      }
+
+      function updateCopyButtonText() {
+        if (!threadData) {
+          copyThreadBtn.style.display = "none";
+          return;
+        }
+
+        const data = getThreadDataForCopy();
+        if (!data) {
+          copyThreadBtn.style.display = "none";
+          return;
+        }
+
+        const contextCount = data.ancestors.length;
+        const siblingsCount = data.siblings.length;
+        copyThreadBtn.textContent = `📋 Copy row for LLM (${contextCount} context + ${siblingsCount} siblings)`;
+        copyThreadBtn.style.display = "block";
+      }
+
+      async function copyThreadToClipboard() {
+        const data = getThreadDataForCopy();
+        const text = formatThreadForClipboard(data);
+
+        if (!text) {
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(text);
+          copyThreadBtn.classList.add("copied");
+          copyThreadBtn.textContent = "✓ Copied!";
+          setTimeout(() => {
+            copyThreadBtn.classList.remove("copied");
+            updateCopyButtonText();
+          }, 1500);
+        } catch (err) {
+          console.error("Failed to copy:", err);
+        }
+      }
+
+      copyThreadBtn.addEventListener("click", copyThreadToClipboard);
 
       // ============================================
       // Data Processing
@@ -887,6 +1328,7 @@
         rows.forEach((row, index) => {
           row.classList.toggle("row-focused", index === focusedRowIndex);
         });
+        updateCopyButtonText();
       }
 
       // Keyboard navigation: move focus between rows
@@ -1463,26 +1905,17 @@
           const hnId = extractHnId(input);
           showStatus(`Fetching thread ${hnId}...`, "loading");
 
-          let data;
+          const response = await fetch(
+            `https://hn.algolia.com/api/v1/items/${hnId}`
+          );
 
-          if (isDebugMock && typeof MOCK_HN_RESPONSE !== "undefined") {
-            console.log(`🔧 Using mock data for ID: ${hnId}`);
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            data = MOCK_HN_RESPONSE;
-          } else {
-            const response = await fetch(
-              `https://hn.algolia.com/api/v1/items/${hnId}`
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch: ${response.status} ${response.statusText}`
             );
-
-            if (!response.ok) {
-              throw new Error(
-                `Failed to fetch: ${response.status} ${response.statusText}`
-              );
-            }
-
-            data = await response.json();
           }
 
+          const data = await response.json();
           processThreadData(data);
         } catch (error) {
           showStatus(error.message, "error");
