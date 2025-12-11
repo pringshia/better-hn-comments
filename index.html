@@ -473,6 +473,32 @@
         cursor: not-allowed;
       }
 
+      /* Ghost indicator for hidden left siblings */
+      .siblings-left-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 60px;
+        padding: 10px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--hn-beige-dark) 100%
+        );
+        border: 2px dashed var(--border-color);
+        border-radius: 4px;
+        color: var(--text-muted);
+        font-size: 11px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.15s;
+      }
+
+      .siblings-left-indicator:hover {
+        opacity: 1;
+        border-color: var(--hn-orange);
+      }
+
       /* No children indicator */
       .no-children-row {
         padding: 15px 50px;
@@ -949,7 +975,26 @@
         rowEl.dataset.depth = depth;
         rowEl.dataset.depthLabel = `Level ${depth + 1}`;
 
-        for (const commentId of siblingIds) {
+        // Start rendering from selected comment onwards (selected always first)
+        const selectedIndex = siblingIds.indexOf(selectedId);
+        const startIndex = selectedIndex >= 0 ? selectedIndex : 0;
+        const hiddenLeftCount = startIndex;
+
+        // Add ghost indicator if there are siblings to the left
+        if (hiddenLeftCount > 0) {
+          const ghostEl = document.createElement("div");
+          ghostEl.className = "siblings-left-indicator";
+          ghostEl.textContent = `← ${hiddenLeftCount}`;
+          ghostEl.title = `${hiddenLeftCount} more comment${
+            hiddenLeftCount > 1 ? "s" : ""
+          } to the left (press ←)`;
+          ghostEl.onclick = () => navigateSelection("left");
+          rowEl.appendChild(ghostEl);
+        }
+
+        const visibleSiblings = siblingIds.slice(startIndex);
+
+        for (const commentId of visibleSiblings) {
           const isSelected = commentId === selectedId;
           const boxEl = renderCommentBox(commentId, isSelected, depth);
           rowEl.appendChild(boxEl);
@@ -1349,6 +1394,14 @@
           hideStatus();
           renderThread();
           updateRowFocus();
+
+          // Scroll to first row after render
+          setTimeout(() => {
+            const firstRow = document.querySelector(".comment-row");
+            if (firstRow) {
+              firstRow.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }, 50);
         } catch (error) {
           showStatus(error.message, "error");
         }
