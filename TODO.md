@@ -1,0 +1,5 @@
+- write blog post
+    - HN comment threads are NOT ergonomic. they disproportionately weight the "left edge" of the tree, and siblings are starved of attention. i also care more about distinct participants in a sub-convo, not sheer comments.
+    - this is also just a generic way to seed generative discourse around any topic (not just an HN topic)
+    - for example, I had the tool generate a mock payload, and it actually did it around the topic of my tool idea and the fake discussion and discourse blew me away
+- share on Reddit, HN (LinkedIn?)

@@ -1237,7 +1237,7 @@
 
         traverse(commentId);
 
-        return { count, users: users.size };
+        return { count, users: users.size - 1 };
       }
 
       function getOrderedChildren(parentId) {
@@ -1618,7 +1618,11 @@
 
           const userStat = document.createElement("span");
           userStat.className = "comment-stat";
-          userStat.textContent = `${stats.users} people`;
+          if (stats.users == 1) {
+            userStat.textContent = `1 person`;
+          } else {
+            userStat.textContent = `${stats.users} people`;
+          }
           footerEl.appendChild(userStat);
         } else {
           const leafStat = document.createElement("span");
