@@ -55,6 +55,37 @@
         font-weight: bold;
       }
 
+      .input-section .microcopy {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        line-height: 1.4;
+      }
+
+      .input-section .microcopy code {
+        background: var(--hn-beige-dark);
+        padding: 1px 4px;
+        border-radius: 2px;
+        font-size: 10px;
+      }
+
+      .manual-json-input {
+        width: 100%;
+        min-height: 150px;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+
+      .manual-json-input:focus {
+        outline: none;
+        border-color: var(--hn-orange);
+      }
+
       .input-row {
         display: flex;
         gap: 10px;
@@ -524,11 +555,14 @@
         color: #856404;
       "
     >
-      🔧 <strong>Debug Mode:</strong> Using mock data. Any ID/URL will return
-      the same test thread. <a href="?" style="color: #856404">Disable</a>
+      🔧 <strong>Debug Mode:</strong>
+      <span id="debug-banner-text"
+        >Using mock data. Any ID/URL will return the same test thread.</span
+      >
+      <a href="?" style="color: #856404">Disable</a>
     </div>
 
-    <div class="input-section">
+    <div id="input-section-normal" class="input-section">
       <label for="hn-input">Enter a Hacker News post ID or URL:</label>
       <div class="input-row">
         <input
@@ -538,6 +572,31 @@
         />
         <button id="fetch-btn">Fetch Thread</button>
       </div>
+    </div>
+
+    <div id="input-section-manual" class="input-section" style="display: none">
+      <label for="manual-json">Paste custom JSON payload:</label>
+      <textarea
+        id="manual-json"
+        class="manual-json-input"
+        placeholder='{"id": 123, "title": "Post title", "author": "username", "children": [...]}'
+      ></textarea>
+      <div class="input-row" style="margin-top: 10px">
+        <button id="load-json-btn">Load JSON</button>
+      </div>
+      <p class="microcopy">
+        Expected format: <code>{ id, title, author, children: [...] }</code
+        ><br />
+        Each comment:
+        <code>{ id, author, text, created_at?, children: [...] }</code
+        ><br /><br />
+        💡 Tip: Have an LLM generate the payload with a prompt like:<br />
+        <code
+          >Generate a sample JSON payload for a HN discussion that may be
+          returned via the Algolia API. The payload should contain no more than
+          40 comments and will be for an article titled "X"</code
+        >
+      </p>
     </div>
 
     <div id="status" class="status"></div>
@@ -591,10 +650,20 @@
       // ============================================
       const urlParams = new URLSearchParams(window.location.search);
       const isDebugMock = urlParams.get("debug") === "mock";
+      const isDebugManual = urlParams.get("debug") === "manual";
 
       if (isDebugMock) {
         console.log("🔧 Debug mode enabled: using mock data");
         document.getElementById("debug-banner").style.display = "block";
+      }
+
+      if (isDebugManual) {
+        console.log("🔧 Debug mode enabled: manual JSON input");
+        document.getElementById("debug-banner").style.display = "block";
+        document.getElementById("debug-banner-text").textContent =
+          "Manual JSON input mode. Paste your custom payload below.";
+        document.getElementById("input-section-normal").style.display = "none";
+        document.getElementById("input-section-manual").style.display = "block";
       }
 
       // ============================================
@@ -613,6 +682,8 @@
       // ============================================
       const hnInput = document.getElementById("hn-input");
       const fetchBtn = document.getElementById("fetch-btn");
+      const manualJsonInput = document.getElementById("manual-json");
+      const loadJsonBtn = document.getElementById("load-json-btn");
       const statusEl = document.getElementById("status");
       const searchSection = document.getElementById("search-section");
       const searchInput = document.getElementById("search-input");
@@ -1332,6 +1403,50 @@
       }
 
       // ============================================
+      // Data Processing
+      // ============================================
+      function processThreadData(data) {
+        threadData = data;
+
+        // Flatten comments for easier processing
+        allComments = [];
+        if (threadData.children) {
+          for (const child of threadData.children) {
+            flattenComments(child, 0, threadData.id, allComments);
+          }
+        }
+
+        // Add root entry
+        allComments.unshift({
+          id: threadData.id,
+          author: threadData.author,
+          text: threadData.title || "",
+          deleted: false,
+          depth: -1,
+          parentId: null,
+          childIds: threadData.children
+            ? threadData.children.map((c) => c.id)
+            : [],
+        });
+
+        // Initialize selection
+        initializeSelectedPath();
+        focusedRowIndex = 0;
+
+        hideStatus();
+        renderThread();
+        updateRowFocus();
+
+        // Scroll to first row after render
+        setTimeout(() => {
+          const firstRow = document.querySelector(".comment-row");
+          if (firstRow) {
+            firstRow.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 50);
+      }
+
+      // ============================================
       // Data Fetching
       // ============================================
       async function fetchThread() {
@@ -1367,44 +1482,7 @@
             data = await response.json();
           }
 
-          threadData = data;
-
-          // Flatten comments for easier processing
-          allComments = [];
-          if (threadData.children) {
-            for (const child of threadData.children) {
-              flattenComments(child, 0, threadData.id, allComments);
-            }
-          }
-
-          // Add root entry
-          allComments.unshift({
-            id: threadData.id,
-            author: threadData.author,
-            text: threadData.title || "",
-            deleted: false,
-            depth: -1,
-            parentId: null,
-            childIds: threadData.children
-              ? threadData.children.map((c) => c.id)
-              : [],
-          });
-
-          // Initialize selection
-          initializeSelectedPath();
-          focusedRowIndex = 0;
-
-          hideStatus();
-          renderThread();
-          updateRowFocus();
-
-          // Scroll to first row after render
-          setTimeout(() => {
-            const firstRow = document.querySelector(".comment-row");
-            if (firstRow) {
-              firstRow.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-          }, 50);
+          processThreadData(data);
         } catch (error) {
           showStatus(error.message, "error");
         }
@@ -1420,6 +1498,41 @@
           fetchThread();
         }
       });
+
+      // Manual JSON mode handlers
+      loadJsonBtn.addEventListener("click", loadManualJson);
+
+      function loadManualJson() {
+        const jsonText = manualJsonInput.value.trim();
+        if (!jsonText) {
+          showStatus("Please paste JSON data", "error");
+          return;
+        }
+
+        try {
+          const data = JSON.parse(jsonText);
+
+          // Basic validation
+          if (!data.id || !data.children) {
+            showStatus(
+              "Invalid format: JSON must have 'id' and 'children' properties",
+              "error"
+            );
+            return;
+          }
+
+          manualJsonInput.blur();
+          showStatus("Loading custom JSON...", "loading");
+
+          // Small delay for visual feedback
+          setTimeout(() => {
+            processThreadData(data);
+            showStatus("Custom thread loaded successfully!", "success");
+          }, 100);
+        } catch (e) {
+          showStatus(`Invalid JSON: ${e.message}`, "error");
+        }
+      }
 
       let searchTimeout;
       searchInput.addEventListener("input", () => {
