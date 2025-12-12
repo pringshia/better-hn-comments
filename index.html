@@ -433,7 +433,7 @@
         border-bottom: 1px solid var(--hn-beige-dark);
         position: relative;
         transition: background-color 0.15s ease;
-        scroll-margin-top: 120px; /* Account for sticky search bar */
+        scroll-margin-top: 160px; /* Account for sticky header (~150px) */
       }
 
       .comment-row:last-child {
@@ -444,7 +444,7 @@
       .comment-row:has(+ .no-children-row) {
         border-bottom: none;
         background-color: transparent;
-        opacity: 0.8;
+        /* opacity: 0.8; */
         background-size: 10px 10px;
         background-image: repeating-linear-gradient(
           45deg,
@@ -664,7 +664,7 @@
         color: var(--text-muted);
         font-size: 11px;
         cursor: pointer;
-        opacity: 0.7;
+        /* opacity: 0.7; */
         transition: opacity 0.15s;
       }
 
@@ -1344,10 +1344,22 @@
 
         updateRowFocus();
 
-        // Scroll the focused row into view
+        // Scroll the focused row into view, accounting for sticky header
         const focusedRow = rows[focusedRowIndex];
         if (focusedRow) {
-          focusedRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          const stickyHeaderHeight = 160;
+          const rect = focusedRow.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+
+          if (rect.top < stickyHeaderHeight) {
+            // Row is above visible area (behind sticky header) - scroll up
+            const targetY = window.scrollY + rect.top - stickyHeaderHeight;
+            window.scrollTo({ top: targetY, behavior: "smooth" });
+          } else if (rect.bottom > viewportHeight) {
+            // Row is below visible area - scroll down
+            const targetY = window.scrollY + rect.bottom - viewportHeight + 20;
+            window.scrollTo({ top: targetY, behavior: "smooth" });
+          }
         }
       }
 
@@ -1537,9 +1549,12 @@
           boxEl.classList.add("deleted");
         }
 
-        // Click to select (unless clicking a link)
+        // Click to select (unless clicking a link or selecting text)
         boxEl.addEventListener("click", (e) => {
           if (e.target.tagName === "A" || e.target.tagName === "BUTTON") return;
+          // Don't trigger selection if user is selecting text
+          const selection = window.getSelection();
+          if (selection && selection.toString().length > 0) return;
           selectComment(commentId, depth);
         });
 
@@ -1574,32 +1589,38 @@
         const textEl = document.createElement("div");
         textEl.className = "comment-text";
 
-        const plainText = stripHtml(comment.text);
-        // ~16 lines at ~30 chars/line = ~480 chars threshold
-        const needsTruncation = plainText.length > 480;
-
         if (comment.deleted) {
           textEl.textContent = "[comment deleted]";
         } else {
-          // Always render full HTML - CSS line-clamp handles truncation
           textEl.innerHTML = cleanHtmlContent(comment.text);
-          if (needsTruncation) {
-            textEl.classList.add("truncated");
-          }
+          // Apply truncation initially to check if content actually overflows
+          textEl.classList.add("truncated");
         }
 
         boxEl.appendChild(textEl);
 
-        // Expand text button
-        if (needsTruncation && !comment.deleted) {
-          const expandBtn = document.createElement("button");
-          expandBtn.className = "expand-text-btn";
-          expandBtn.textContent = "[expand]";
-          expandBtn.onclick = (e) => {
-            e.stopPropagation();
-            toggleTextExpand(textEl, expandBtn);
-          };
-          boxEl.appendChild(expandBtn);
+        // After element is in DOM, check if truncation is actually needed
+        if (!comment.deleted) {
+          requestAnimationFrame(() => {
+            // scrollHeight > clientHeight means content is being clipped
+            const isOverflowing = textEl.scrollHeight > textEl.clientHeight + 1;
+
+            if (isOverflowing) {
+              // Keep truncated class and add expand button (before footer)
+              const expandBtn = document.createElement("button");
+              expandBtn.className = "expand-text-btn";
+              expandBtn.textContent = "[expand]";
+              expandBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleTextExpand(textEl, expandBtn);
+              };
+              const footer = boxEl.querySelector(".comment-footer");
+              boxEl.insertBefore(expandBtn, footer);
+            } else {
+              // Content fits - remove unnecessary truncation
+              textEl.classList.remove("truncated");
+            }
+          });
         }
 
         // Footer with stats and navigation
