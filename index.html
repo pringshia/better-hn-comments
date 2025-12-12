@@ -449,7 +449,7 @@
         background-image: repeating-linear-gradient(
           45deg,
           var(--text-muted) 0,
-          var(--hn-beige-dark) 1px,
+          var(--text-muted) 1px,
           transparent 0,
           transparent 50%
         );
@@ -458,6 +458,7 @@
       /* Keyboard-focused row */
       .comment-row.row-focused {
         background-color: hsl(45, 47%, 87%); /* ~10% darker than beige */
+        outline: 3px solid var(--text-muted);
       }
 
       .comment-row:has(+ .no-children-row).row-focused {
@@ -1479,7 +1480,7 @@
             if (depth > 0) {
               const noChildrenEl = document.createElement("div");
               noChildrenEl.className = "no-children-row";
-              noChildrenEl.textContent = "↳ No more replies in this branch";
+              noChildrenEl.textContent = "ⓧ No more replies in this branch";
               treeContainer.appendChild(noChildrenEl);
             }
             break;
