@@ -1322,6 +1322,26 @@
         updateCopyButtonText();
       }
 
+      // Scroll a comment box into view, accounting for sticky header
+      function scrollCommentIntoView(commentId) {
+        const commentBox = document.getElementById(`comment-${commentId}`);
+        if (!commentBox) return;
+
+        const stickyHeaderHeight = 160;
+        const rect = commentBox.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        if (rect.top < stickyHeaderHeight) {
+          // Comment is above visible area (behind sticky header) - scroll up
+          const targetY = window.scrollY + rect.top - stickyHeaderHeight;
+          window.scrollTo({ top: targetY, behavior: "smooth" });
+        } else if (rect.bottom > viewportHeight) {
+          // Comment is below visible area - scroll down
+          const targetY = window.scrollY + rect.bottom - viewportHeight + 20;
+          window.scrollTo({ top: targetY, behavior: "smooth" });
+        }
+      }
+
       // Keyboard navigation: move focus between rows
       function navigateRow(direction) {
         const rows = document.querySelectorAll(".comment-row");
@@ -1377,27 +1397,7 @@
 
         if (newIndex !== currentIndex) {
           selectComment(siblings[newIndex], focusedRowIndex);
-
-          // Scroll the newly selected comment box into view, accounting for sticky header
-          const commentBox = document.getElementById(
-            `comment-${siblings[newIndex]}`
-          );
-          if (commentBox) {
-            const stickyHeaderHeight = 160;
-            const rect = commentBox.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-
-            if (rect.top < stickyHeaderHeight) {
-              // Comment is above visible area (behind sticky header) - scroll up
-              const targetY = window.scrollY + rect.top - stickyHeaderHeight;
-              window.scrollTo({ top: targetY, behavior: "smooth" });
-            } else if (rect.bottom > viewportHeight) {
-              // Comment is below visible area - scroll down
-              const targetY =
-                window.scrollY + rect.bottom - viewportHeight + 20;
-              window.scrollTo({ top: targetY, behavior: "smooth" });
-            }
-          }
+          scrollCommentIntoView(siblings[newIndex]);
         }
       }
 
@@ -1438,6 +1438,7 @@
           const depth = selectedPath.indexOf(commentId);
           if (depth !== -1) {
             selectComment(siblings[newIndex], depth);
+            scrollCommentIntoView(siblings[newIndex]);
           }
         }
       }
@@ -1568,6 +1569,7 @@
           const selection = window.getSelection();
           if (selection && selection.toString().length > 0) return;
           selectComment(commentId, depth);
+          scrollCommentIntoView(commentId);
         });
 
         // Header
