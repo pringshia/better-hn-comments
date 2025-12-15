@@ -681,6 +681,7 @@
         color: var(--text-muted);
         font-style: italic;
         font-size: 12px;
+        height: 30vh;
       }
 
       /* Floating copy button */
@@ -1021,6 +1022,11 @@
         if (!text) return "";
         const tempElement = document.createElement("div");
         tempElement.innerHTML = text;
+        // Make all links open in new tab
+        tempElement.querySelectorAll("a").forEach((link) => {
+          link.setAttribute("target", "_blank");
+          link.setAttribute("rel", "noopener noreferrer");
+        });
         return tempElement.innerHTML;
       }
 
@@ -1524,7 +1530,7 @@
         if (hiddenLeftCount > 0) {
           const ghostEl = document.createElement("div");
           ghostEl.className = "siblings-left-indicator";
-          ghostEl.textContent = `← ${hiddenLeftCount}`;
+          ghostEl.textContent = `←${hiddenLeftCount}`;
           ghostEl.title = `${hiddenLeftCount} more comment${
             hiddenLeftCount > 1 ? "s" : ""
           } to the left (press ←)`;
@@ -2042,7 +2048,14 @@
         switch (e.key) {
           case "ArrowUp":
             e.preventDefault();
-            navigateRow("up");
+            if (e.shiftKey) {
+              // Jump to first row
+              focusedRowIndex = 0;
+              updateRowFocus();
+              scrollCommentIntoView(selectedPath[0]);
+            } else {
+              navigateRow("up");
+            }
             break;
           case "ArrowDown":
             e.preventDefault();
