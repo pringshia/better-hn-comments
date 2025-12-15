@@ -962,8 +962,10 @@
           fetchFrontPageStories(true);
         });
 
-      // Load front page stories on init
-      fetchFrontPageStories();
+      // Load front page stories on init (skip if auto-loading a specific ID)
+      if (!urlParams.get("id")) {
+        fetchFrontPageStories();
+      }
 
       // ============================================
       // Global State
@@ -2091,6 +2093,13 @@
       stickySentinel.style.marginBottom = "-1px";
       searchSection.parentNode.insertBefore(stickySentinel, searchSection);
       stickyObserver.observe(stickySentinel);
+
+      // Auto-load from URL param ?id=...
+      const autoLoadId = urlParams.get("id");
+      if (autoLoadId) {
+        hnInput.value = autoLoadId;
+        fetchThread();
+      }
     </script>
 
     <!-- ================================================================
