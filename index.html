@@ -477,7 +477,7 @@
         position: absolute;
         left: 0;
         top: 5px;
-        font-size: 9px;
+        font-size: 12px;
         color: var(--text-muted);
         background: var(--hn-beige);
         padding: 2px 4px;
@@ -656,7 +656,7 @@
       .siblings-left-indicator {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: end;
         min-width: 60px;
         padding: 10px;
         background: white;
@@ -666,6 +666,7 @@
         font-size: 11px;
         cursor: pointer;
         /* opacity: 0.7; */
+        margin-left: -72px;
         transition: opacity 0.15s;
       }
 
@@ -858,19 +859,8 @@
         tab.addEventListener("click", () => switchTab(tab.dataset.tab));
       });
 
-      // Debug mock mode: switch to JSON tab and pre-populate with mock data
-      if (isDebugMock && typeof MOCK_HN_RESPONSE !== "undefined") {
-        console.log("🔧 Debug mode enabled: mock data pre-populated");
-        document.getElementById("debug-banner").style.display = "block";
-        document.getElementById("debug-banner-text").textContent =
-          "Mock data has been pre-populated in the Custom JSON tab.";
-        switchTab("custom-json");
-        document.getElementById("manual-json").value = JSON.stringify(
-          MOCK_HN_RESPONSE,
-          null,
-          2
-        );
-      }
+      // Debug mock mode initialization is handled after MOCK_HN_RESPONSE is defined
+      // (see the mock data script at the end of the file)
 
       // ============================================
       // Front Page Stories
@@ -1387,6 +1377,27 @@
 
         if (newIndex !== currentIndex) {
           selectComment(siblings[newIndex], focusedRowIndex);
+
+          // Scroll the newly selected comment box into view, accounting for sticky header
+          const commentBox = document.getElementById(
+            `comment-${siblings[newIndex]}`
+          );
+          if (commentBox) {
+            const stickyHeaderHeight = 160;
+            const rect = commentBox.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+
+            if (rect.top < stickyHeaderHeight) {
+              // Comment is above visible area (behind sticky header) - scroll up
+              const targetY = window.scrollY + rect.top - stickyHeaderHeight;
+              window.scrollTo({ top: targetY, behavior: "smooth" });
+            } else if (rect.bottom > viewportHeight) {
+              // Comment is below visible area - scroll down
+              const targetY =
+                window.scrollY + rect.bottom - viewportHeight + 20;
+              window.scrollTo({ top: targetY, behavior: "smooth" });
+            }
+          }
         }
       }
 
@@ -1501,7 +1512,7 @@
         const rowEl = document.createElement("div");
         rowEl.className = "comment-row";
         rowEl.dataset.depth = depth;
-        rowEl.dataset.depthLabel = `Level ${depth + 1}`;
+        rowEl.dataset.depthLabel = `Lvl ${depth + 1}`;
 
         // Start rendering from selected comment onwards (selected always first)
         const selectedIndex = siblingIds.indexOf(selectedId);
@@ -2244,6 +2255,20 @@
           },
         ],
       };
+
+      // Debug mock mode: switch to JSON tab and pre-populate with mock data
+      if (isDebugMock) {
+        console.log("🔧 Debug mode enabled: mock data pre-populated");
+        document.getElementById("debug-banner").style.display = "block";
+        document.getElementById("debug-banner-text").textContent =
+          "Mock data has been pre-populated in the Custom JSON tab.";
+        switchTab("custom-json");
+        document.getElementById("manual-json").value = JSON.stringify(
+          MOCK_HN_RESPONSE,
+          null,
+          2
+        );
+      }
     </script>
     <!-- END MOCK DATA -->
   </body>
