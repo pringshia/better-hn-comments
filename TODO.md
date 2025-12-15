@@ -3,3 +3,10 @@
     - this is also just a generic way to seed generative discourse around any topic (not just an HN topic)
     - for example, I had the tool generate a mock payload, and it actually did it around the topic of my tool idea and the fake discussion and discourse blew me away
 - share on Reddit, HN (LinkedIn?)
+
+- bookmarked comments feature
+    - small icon button on each comment
+    - stored in localstorage
+    - bookmarks saved as (story ID, comment ID, date?)
+    - at app level, a bookmarks tab that shows all bookmarked comments across all links with bookmarks. min-win is it opens the story on HN itself
+    - (optional) at story level, a way to search for bookmarked content (could reuse search logic)
