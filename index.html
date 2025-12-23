@@ -538,6 +538,37 @@
         box-shadow: 0 0 0 3px var(--highlight-bg);
       }
 
+      /* Directional navigation animations */
+      @keyframes slide-in-from-right {
+        from {
+          opacity: 1;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes slide-in-from-left {
+        from {
+          opacity: 1;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .comment-row.animate-left .comment-box {
+        animation: slide-in-from-right 0.2s ease-in;
+      }
+
+      .comment-row.animate-right .comment-box {
+        animation: slide-in-from-left 0.2s ease-in;
+      }
+
       .comment-header {
         display: flex;
         justify-content: space-between;
@@ -977,6 +1008,7 @@
       let selectedPath = []; // Array of selected comment IDs at each depth
       let sortByActivity = true; // Default ON
       let focusedRowIndex = 0; // Currently keyboard-focused row
+      let lastNavDirection = null; // "left" or "right" for directional animation
       let searchMatches = [];
       let currentMatchIndex = -1;
 
@@ -1406,6 +1438,7 @@
         }
 
         if (newIndex !== currentIndex) {
+          lastNavDirection = direction;
           selectComment(siblings[newIndex], focusedRowIndex);
           scrollCommentIntoView(siblings[newIndex]);
         }
@@ -1517,6 +1550,9 @@
           currentParentId = selectedAtThisDepth;
           depth++;
         }
+
+        // Reset navigation direction after render
+        lastNavDirection = null;
       }
 
       function renderCommentRow(siblingIds, selectedId, depth) {
@@ -1524,6 +1560,11 @@
         rowEl.className = "comment-row";
         rowEl.dataset.depth = depth;
         rowEl.dataset.depthLabel = `Lvl ${depth + 1}`;
+
+        // Apply animation class if this is the focused row and we just navigated
+        if (depth === focusedRowIndex && lastNavDirection) {
+          rowEl.classList.add(`animate-${lastNavDirection}`);
+        }
 
         // Start rendering from selected comment onwards (selected always first)
         const selectedIndex = siblingIds.indexOf(selectedId);
